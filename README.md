@@ -3,7 +3,7 @@
 ![Salesforce LWC Health & Performance Dashboard](./LWC%20Dashboard%20Blurred.png)
 
 ## Overview
-A custom Salesforce application built on Developer Edition that centralizes real-time health, financial, and skill-building metrics into a unified dashboard. The project combines dynamic Lightning Web Components (LWCs), Apex backend controllers, and automated data pipelines to track daily performance without manual overhead.
+A custom Salesforce application built on Developer Edition that centralizes real-time health, financial, and skill-building metrics into a unified dashboard. The project combines dynamic Lightning Web Components (LWCs), Apex backend controllers, and automated data pipelines to track daily performance.
 
 ---
 
@@ -11,20 +11,20 @@ A custom Salesforce application built on Developer Edition that centralizes real
 
 ### 1. Top Ticker Bar
 * **Live Metrics**: Displays current bank balance, net worth, current weight, and daily target calories.
-* **Trajectory Indicators**: Shows real-time direction to see if daily metrics are pulling toward or drifting away from long-term targets.
+* **Trajectory Indicators**: Shows real-time direction to see if daily metrics are working toward or drifting away from long-term targets.
 
 ### 2. Main Analytics & Interactive Charting
 * **Time Horizons**: Toggle views across 7-day, 30-day, and Year-To-Date (YTD) windows.
-* **Metric Selector**: Interactive dropdowns to isolate and review specific trends over time (Weight, TDEE, Calories, Protein, and Financial targets).
+* **Metric Selector**: Interactive dropdowns to isolate and review specific trends over time (Weight, Body Fat %, TDEE, Calories, Macronutrients as well as Financial targets).
 
 ### 3. Health Intelligence Node
 * **Automated Data Ingestion**: Pulls daily biometric inputs via external API pipelines (Google Health Connect / Apps Script to Salesforce Custom Objects).
 * **TDEE & Macro Engine**: Calculates rolling TDEE averages and daily target calories to drive precise weekly weight velocity.
 
 ### 4. Goals & Performance Index
-* **Goal Swapping**: Arrow tab navigation to cycle through active health and financial milestones on the fly.
-* **Unified Performance Score**: A single daily execution percentage combining health, daily effort, and financial execution.
-* **Trailhead Tracking**: Tracks study velocity, points, and certification milestone progress.
+* **Goal Swapping**: Arrow tab navigation to cycle through active health and financial goals.
+* **Unified Performance Score**: A single daily execution percentage combining health, daily effort, and financial performance.
+* **Trailhead Tracking**: Tracks Salesforce Trailhead velocity, points, and milestone progress.
 
 ---
 
