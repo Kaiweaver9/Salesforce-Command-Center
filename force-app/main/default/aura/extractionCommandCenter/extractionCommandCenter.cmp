@@ -1,0 +1,470 @@
+<aura:component implements="flexipage:availableForAllPageTypes" access="global" controller="ExtractionController">
+    <ltng:require scripts="{!$Resource.ChartJS}" afterScriptsLoaded="{!c.doInit}"/>
+
+    <aura:attribute name="isLoaded" type="Boolean" default="false" />
+    <aura:attribute name="upiTotal" type="Integer" default="0" /> 
+    <aura:attribute name="height" type="String" default="900px"/>
+    <aura:attribute name="currentDate" type="String" default="LOADING..." />
+    <aura:attribute name="currentTime" type="String" default="LOADING..." />
+    
+    <aura:attribute name="aiCache" type="Map" default="{}" />
+    <aura:attribute name="isAiLoading" type="Boolean" default="false" />
+    <aura:attribute name="isSyncing" type="Boolean" default="false" />
+
+    <aura:attribute name="finLabel" type="String" default="EXTRACTION FUND"/>
+    <aura:attribute name="finTarget" type="Integer" />
+    <aura:attribute name="currentBalance" type="Decimal" default="0.00" />
+    <aura:attribute name="netWorth" type="Decimal" default="0.00" />
+    <aura:attribute name="finProgress" type="Integer" default="0" />
+    <aura:attribute name="finTrendIcon" type="String" default="—" />
+    <aura:attribute name="finTrendClass" type="String" default="neutral-gray" />
+
+    <aura:attribute name="goalLabel" type="String" default="WEIGHT GOAL"/>
+    <aura:attribute name="goalTarget" type="Integer" />
+    <aura:attribute name="currentWeight" type="Decimal" default="0.0" />
+    <aura:attribute name="goalProgress" type="Integer" default="0" />
+    <aura:attribute name="weightTrendIcon" type="String" default="—" />
+    <aura:attribute name="weightTrendClass" type="String" default="neutral-gray" />
+    
+    <aura:attribute name="calories" type="Integer" default="0"/>
+    <aura:attribute name="protein" type="Decimal" default="0"/>
+    <aura:attribute name="carbs" type="Decimal" default="0"/>
+    <aura:attribute name="fat" type="Decimal" default="0"/>
+    <aura:attribute name="rollingTDEE" type="Integer" default="0" />
+    <aura:attribute name="recommendedCalories" type="Integer" default="0" />
+    <aura:attribute name="weeklyVelocity" type="Decimal" default="0.00" />
+    <aura:attribute name="clinicalStatus" type="String" default="OPTIMAL" />
+    <aura:attribute name="statusColor" type="String" default="biomech-green" />
+
+    <aura:attribute name="trailheadPointsEntry" type="Integer" default="0"/>
+    <aura:attribute name="totalTrailheadPoints" type="Integer" default="0"/>
+    
+    <aura:attribute name="velocityMode" type="String" default="FINANCIAL" />
+    <aura:attribute name="daysRemaining" type="String" default="0"/>
+    <aura:attribute name="daysRemainingFin" type="String" default="0"/>
+    <aura:attribute name="daysRemainingHealth" type="String" default="0"/>
+    <aura:attribute name="targetDate" type="String" default="CALCULATING..." />
+    <aura:attribute name="targetDateFin" type="String" default="CALCULATING..." />
+    <aura:attribute name="targetDateHealth" type="String" default="CALCULATING..." />
+    
+    <aura:attribute name="activeDrawer" type="String" default="NONE"/>
+    <aura:attribute name="timeframe" type="String" default="7D"/>
+    
+    <aura:attribute name="chartView" type="String" default="HEALTH"/>
+    <aura:attribute name="activeMetric" type="String" default="WEIGHT"/>
+
+    <aura:attribute name="statAvg" type="String" default="—" />
+    <aura:attribute name="statMin" type="String" default="—" />
+    <aura:attribute name="statMax" type="String" default="—" />
+    <aura:attribute name="finIncome" type="String" default="—" />
+    <aura:attribute name="finExpenses" type="String" default="—" />
+    <aura:attribute name="netIncomeAmount" type="String" default="—" />
+
+    <aura:attribute name="currentPhase" type="String" default="MAINTENANCE" />
+
+    <aura:attribute name="shiftOverride" type="Decimal" />
+    
+    <aura:attribute name="aiContent" type="String" default="ANALYZING SYSTEM DATA..." />
+    <aura:attribute name="macroSVG" type="String" default="" />
+    <lightning:overlayLibrary aura:id="overlayLib"/>
+
+    <div class="monolith-container" style="{!'height:' + v.height}">
+        <div class="menu-wall sidebar-node">
+            <div class="sidebar-header" style="display: flex; flex-direction: column; align-items: center;">
+                <div class="vertical-text">[ SYSTEM OPS ]</div>
+                <div style="color: #8b949e; font-size: 10px; font-family: 'Montserrat', sans-serif; letter-spacing: 1px; margin-top: 15px; text-align: center; width: 100%; display: block;">
+                    <div>{!v.currentDate}</div>
+                    <div style="margin-top: 5px; font-family: monospace; color: #84ff33; font-size: 11px; letter-spacing: 0.5px;">{!v.currentTime}</div>
+                </div>
+            </div>
+            
+            <div class="sidebar-content">
+                <div class="nav-section">
+                    <p class="nav-category-label">PROFILE</p>
+                    <div class="nav-item">
+                        <lightning:icon iconName="utility:user" size="xx-small" class="nav-icon-gray"/>
+                        <span>Profile Statistics</span>
+                    </div>
+                    <div class="nav-item">
+                        <lightning:icon iconName="utility:priority" size="xx-small" class="nav-icon-gray"/>
+                        <span>Current Goals</span>
+                    </div>
+                    <div class="nav-item">
+                        <lightning:icon iconName="utility:event" size="xx-small" class="nav-icon-gray"/>
+                        <span>Upcoming Tasks</span>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <p class="nav-category-label">ANALYTICS</p>
+                    <div class="nav-item active-nav-green">
+                        <lightning:icon iconName="utility:apps" size="xx-small" class="nav-icon-gray"/>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" onclick="{!c.switchToFinancial}">
+                        <lightning:icon iconName="utility:moneybag" size="xx-small" class="nav-icon-gray"/>
+                        <span>Financial Intelligence</span>
+                    </div>
+                    <div class="nav-item" onclick="{!c.switchToHealth}">
+                        <lightning:icon iconName="utility:activity" size="xx-small" class="nav-icon-gray"/>
+                        <span>Health Intelligence</span>
+                    </div>
+                    <div class="nav-item">
+                        <lightning:icon iconName="utility:rating" size="xx-small" class="nav-icon-gray"/>
+                        <span>Performance Index</span>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <p class="nav-category-label">RESOURCES</p>
+                    <div class="nav-item">
+                        <lightning:icon iconName="utility:formula" size="xx-small" class="nav-icon-gray"/>
+                        <span>Paycheck Calculator</span>
+                    </div>
+                    <div class="nav-item">
+                        <lightning:icon iconName="utility:link" size="xx-small" class="nav-icon-gray"/>
+                        <span>External Resources</span>
+                    </div>
+                    <div class="nav-item">
+                        <lightning:icon iconName="utility:setup_assistant_guide" size="xx-small" class="nav-icon-gray"/>
+                        <span>Projects</span>
+                    </div>
+                </div>
+
+                <div class="nav-section system-footer">
+                    <p class="nav-category-label">SYSTEM SETTINGS</p>
+                    <div class="nav-item nav-item-toggle">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <lightning:icon iconName="utility:hide" size="xx-small" class="nav-icon-gray"/>
+                            <span>Privacy Mode</span>
+                        </div>
+                        <lightning:input type="toggle" variant="label-hidden" name="demoMode" class="clinical-toggle"/>
+                    </div>
+                    <div class="nav-item">
+                        <lightning:icon iconName="utility:palette" size="xx-small" class="nav-icon-gray"/>
+                        <span>Theme</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-block">
+            <div class="anchor-row">
+                <div class="top-node balance-skin">
+                    <div class="ticker-window-mask">
+                        <div class="ticker-vertical-slider">
+                            <div class="ticker-frame">
+                                <p class="metric-label-node">CURRENT BALANCE</p>
+                                <h2 class="metric-value-node"><lightning:formattedNumber value="{!v.currentBalance}" style="currency" currencyCode="USD"/></h2>
+                            </div>
+                            <div class="ticker-frame">
+                                <p class="metric-label-node">NET WORTH</p>
+                                <h2 class="metric-value-node"><lightning:formattedNumber value="{!v.netWorth}" style="currency" currencyCode="USD"/></h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="top-node weight-skin">
+                    <div class="ticker-window-mask">
+                        <div class="ticker-vertical-slider">
+                            <div class="ticker-frame">
+                                <p class="metric-label-node">CURRENT WEIGHT</p>
+                                <h2 class="metric-value-node">{!v.currentWeight} <span style="font-size: 10px; opacity: 0.6;">LBS</span></h2>
+                            </div>
+                            <div class="ticker-frame">
+                                <p class="metric-label-node">TARGET CALORIES</p>
+                                <h2 class="metric-value-node">{!v.recommendedCalories} <span style="font-size: 10px; opacity: 0.6;">KCAL</span></h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="summary-stack-node">
+                    <div class="summary-card">
+                        <div style="width: 85px; flex-shrink: 0;">
+                            <p class="chart-title">{!v.finLabel}</p>
+                            <h3><lightning:formattedNumber value="{!v.finTarget}" style="currency" currencyCode="USD"/></h3>
+                        </div>
+                        <div class="momentum-zone" style="flex-grow: 1; display: flex; justify-content: center; padding-right: 15px;">
+                            <span class="{!'chevron ' + v.finTrendClass}">{!v.finTrendIcon}</span>
+                        </div>
+                        <div class="{!v.finProgress >= 80 ? 'trend-pill pill-active' : (v.finProgress >= 50 ? 'trend-pill pill-momentum' : 'trend-pill pill-neutral')}">
+                            {!v.finProgress}%
+                        </div>
+                    </div>
+
+                    <div class="summary-card">
+                        <div style="width: 85px; flex-shrink: 0;">
+                            <p class="chart-title">{!v.goalLabel}</p>
+                            <h3>{!v.goalTarget} LBS</h3>
+                        </div>
+                        <div class="momentum-zone" style="flex-grow: 1; display: flex; justify-content: center; padding-right: 15px;">
+                            <span class="{!'chevron ' + (v.currentPhase == 'MAINTENANCE' ? 'neutral-gray' : v.weightTrendClass)}">
+                                {!v.weightTrendIcon}
+                            </span>
+                        </div>
+                        <div class="{!v.goalProgress >= 80 ? 'trend-pill pill-active' : (v.goalProgress >= 50 ? 'trend-pill pill-momentum' : 'trend-pill pill-neutral')}">
+                            {!v.goalProgress}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="center-stage" style="display: flex; flex-direction: column; overflow: hidden; padding-bottom: 10px; position: relative;">
+                <div class="stage-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 4px; height: 32px; flex: 0 0 auto;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <p class="chart-title" style="margin: 0; font-weight: 400; letter-spacing: 3px; flex-shrink: 0; color: #8b949e;">PERFORMANCE</p>
+                        
+                        <div class="perspective-selector" style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; padding: 0 8px; height: 26px;">
+                            <lightning:buttonMenu variant="bare" 
+                                                  label="{!v.chartView}" 
+                                                  onselect="{!c.handleChartToggle}" 
+                                                  class="neon-dropdown clinical-label"
+                                                  iconName="utility:down"
+                                                  menuAlignment="left">
+                                <lightning:menuItem value="HEALTH" label="HEALTH" iconName="utility:activity"/>
+                                <lightning:menuItem value="FINANCIAL" label="FINANCIAL" iconName="utility:moneybag"/>
+                            </lightning:buttonMenu>
+
+                            <div style="width: 1px; height: 10px; background: rgba(255,255,255,0.15); margin: 0 8px;"></div>
+
+                            <lightning:buttonMenu variant="bare" 
+                                                  label="{!v.activeMetric}" 
+                                                  onselect="{!c.handleMetricChange}" 
+                                                  class="neon-dropdown clinical-label"
+                                                  iconName="utility:down"
+                                                  menuAlignment="left">
+                                <aura:if isTrue="{!v.chartView == 'HEALTH'}">
+                                    <lightning:menuItem value="WEIGHT" label="WEIGHT" />
+                                    <lightning:menuItem value="TDEE" label="TDEE" />
+                                    <lightning:menuItem value="BODY FAT" label="BODY FAT" />
+                                    <lightning:menuItem value="CALORIES" label="CALORIES" />
+                                    <lightning:menuItem value="PROTEIN" label="PROTEIN" />
+                                    <lightning:menuItem value="CARBS" label="CARBS" />
+                                    <lightning:menuItem value="FAT" label="FAT" />
+                                </aura:if>
+                                <aura:if isTrue="{!v.chartView == 'FINANCIAL'}">
+                                    <lightning:menuItem value="CASH FLOW" label="CASH FLOW" iconName="utility:moneybag" />
+                                </aura:if>
+                            </lightning:buttonMenu>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <button class="{!v.timeframe == '7D' ? 'filter-pill active' : 'filter-pill'}" onclick="{!c.filter7D}">7D</button>
+                        <button class="{!v.timeframe == '30D' ? 'filter-pill active' : 'filter-pill'}" onclick="{!c.filter30D}">30D</button>
+                        <button class="{!v.timeframe == 'YTD' ? 'filter-pill active' : 'filter-pill'}" onclick="{!c.filterYTD}">YTD</button>
+                    </div>
+                </div>
+
+                <div class="canvas-container" style="flex: 1 1 auto; position: relative; width: 100%; min-height: 0;">
+                    
+                    <aura:if isTrue="{!v.chartView == 'HEALTH'}">
+                        <div class="phase-overlay" style="position: absolute; top: 0px; left: 55px; z-index: 5; text-align: left; pointer-events: none; font-family: 'Montserrat', sans-serif;">
+                            <div style="margin-bottom: 3px;">
+                                <span style="color: #8b949e; font-size: 7px; text-transform: uppercase; letter-spacing: 2px; font-weight: 400;">Current Phase</span>
+                                <div style="display: flex; align-items: center; gap: 4px; color: #fff; font-size: 11px; font-weight: 700; line-height: 1; letter-spacing: 1px; text-transform: uppercase; margin-top: 4px;">
+                                    <span style="{!v.currentPhase == 'MAINTENANCE' ? 'color: #8b949e;' : ''}">{!v.currentPhase}</span>
+                                    <span style="font-size: 8px; font-family: monospace; display: inline-block;">
+                                        <aura:if isTrue="{!v.currentPhase == 'CUTTING'}"> <span style="color: #ff4444;">▼</span> </aura:if>
+                                        <aura:if isTrue="{!v.currentPhase == 'BULKING'}"> <span style="color: #84ff33;">▲</span> </aura:if>
+                                        <aura:if isTrue="{!v.currentPhase == 'REVERSE'}"> <span style="color: #2596be;">►</span> </aura:if>
+                                        <aura:if isTrue="{!v.currentPhase == 'MAINTENANCE'}"> <span style="color: #8b949e;">━</span> </aura:if>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </aura:if>
+
+                    <aura:if isTrue="{!v.chartView == 'FINANCIAL'}">
+                        <div class="left-stats-overlay" style="position: absolute; top: 0px; left: 55px; z-index: 5; pointer-events: none; font-family: 'Montserrat', sans-serif;">
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="color: #8b949e; font-size: 6px; text-transform: uppercase; letter-spacing: 1px; font-weight: 400;">Current Month</span>
+                                    <span style="color: #fff; font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">JUNE 2026</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="color: #8b949e; font-size: 6px; text-transform: uppercase; letter-spacing: 1px; font-weight: 400;">Net Income</span>
+                                    <span style="color: #fff; font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">{!v.netIncomeAmount}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </aura:if>
+
+                    <div class="stats-overlay" style="position: absolute; top: 0px; right: 12px; z-index: 5; text-align: right; pointer-events: none; font-family: 'Montserrat', sans-serif;">
+                        <aura:if isTrue="{!v.chartView == 'HEALTH'}">
+                            <div style="margin-bottom: 3px;">
+                                <span style="color: #8b949e; font-size: 7px; text-transform: uppercase; letter-spacing: 2px; font-weight: 400;">Avg</span>
+                                <div style="color: #fff; font-size: 11px; font-weight: 700; line-height: 1; letter-spacing: 1px;">{!v.statAvg}</div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px;">
+                                <div style="display: flex; align-items: baseline; gap: 3px;">
+                                    <span style="color: #8b949e; font-size: 6px; text-transform: uppercase; letter-spacing: 1px;">Min</span>
+                                    <div style="color: #8b949e; font-size: 8px; font-weight: 500;">{!v.statMin}</div>
+                                </div>
+                                <div style="display: flex; align-items: baseline; gap: 3px;">
+                                    <span style="color: #8b949e; font-size: 6px; text-transform: uppercase; letter-spacing: 1px;">Max</span>
+                                    <div style="color: #8b949e; font-size: 8px; font-weight: 500;">{!v.statMax}</div>
+                                </div>
+                            </div>
+                        </aura:if>
+                        
+                        <aura:if isTrue="{!v.chartView == 'FINANCIAL'}">
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <div style="display: flex; align-items: baseline; gap: 5px;">
+                                    <span style="color: #8b949e; font-size: 6px; text-transform: uppercase; letter-spacing: 1px;">INCOME</span>
+                                    <span style="color: #84ff33; font-size: 9px; font-weight: 700;">{!v.finIncome}</span>
+                                </div>
+                                <div style="display: flex; align-items: baseline; gap: 5px;">
+                                    <span style="color: #8b949e; font-size: 6px; text-transform: uppercase; letter-spacing: 1px;">EXPENSES</span>
+                                    <span style="color: #ff4444; font-size: 9px; font-weight: 700;">{!v.finExpenses}</span>
+                                </div>
+                            </div>
+                        </aura:if>
+                    </div>
+
+                    <aura:if isTrue="{!v.chartView == 'HEALTH'}">
+                        <canvas aura:id="weightChart" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></canvas>
+                    </aura:if>
+                    <aura:if isTrue="{!v.chartView == 'FINANCIAL'}">
+                        <canvas aura:id="financialChart" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></canvas>
+                    </aura:if>
+                </div>
+            </div>
+
+            <div class="northeast-node sidebar-node" style="padding: 20px !important; display: flex; flex-direction: column; position: relative;">
+                <div class="upi-header" style="flex: 0 0 auto;">
+                    <p class="chart-title">DAILY PERFORMANCE</p>
+                    <div class="upi-readout">
+                        <span class="total-label">UPI TOTAL</span>
+                        <span class="total-value">{!v.upiTotal}%</span>
+                    </div>
+                </div>
+                <div aura:id="upiTooltipAnchor" style="position: relative; width: 100%;"></div>
+                <div class="canvas-container-small" style="height: 210px; position: relative; margin-top: 5px;">
+                    <canvas aura:id="upiChart"></canvas>
+                </div>
+                
+                <div class="overview-trigger-zone" style="margin-top: 15px !important;">
+                    <button class="overview-btn" onclick="{!c.toggleOverview}">
+                        <span class="btn-text">OVERVIEW</span>
+                        <lightning:icon iconName="{!v.activeDrawer == 'OVERVIEW' ? 'utility:chevronup' : 'utility:chevrondown'}" 
+                                        size="xx-small" 
+                                        variant="inverse" 
+                                        class="neon-chevron-fix"/>
+                    </button>
+                </div>
+
+                <aura:if isTrue="{!v.activeDrawer == 'OVERVIEW'}">
+                    <div class="overview-drawer-content" style="position: absolute; top: 100%; left: 0; width: 100%; background: #0b0e11; border: 1px solid rgba(132, 255, 51, 0.2); z-index: 100; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                        <p class="chart-title" style="color: #84ff33;">SOVEREIGN ANALYSIS</p>
+                        <div class="ai-text-flow" style="font-family: monospace; font-size: 11px; color: #fff; line-height: 1.5;">
+                            {!v.aiContent}
+                        </div>
+                    </div>
+                </aura:if>
+            </div>
+
+            <div class="southeast-node sidebar-node" style="position: relative;">
+                <div class="ai-trigger-anchor">
+                    <lightning:buttonIcon iconName="utility:sparkles" variant="bare" onclick="{!c.handleAIPopup}" class="ai-icon-ghost" title="Trailhead Logic" value="Trailhead"/>
+                </div>
+                <div class="dashboard-header"><p class="chart-title">TRAILHEAD PROGRESS</p></div>
+                <div class="canvas-container-small"><canvas aura:id="trailheadChart"></canvas></div>
+                <div class="point-entry-zone">
+                    <lightning:input type="number" value="{!v.trailheadPointsEntry}" variant="label-hidden" placeholder="0" class="point-input-field"/>
+                    <button class="add-button-field" onclick="{!c.handleAddPoints}">ADD</button>
+                    <button class="neon-undo-btn" onclick="{!c.handleUndoEntry}">
+                        <lightning:icon iconName="utility:undo" size="xx-small" variant="inverse" class="blue-icon-fix"/>
+                    </button>
+                </div>
+                <div class="total-progress-footer">
+                    <span class="total-label">LIFETIME PROGRESS</span>
+                    <span class="total-value">
+                        <lightning:formattedNumber value="{!v.totalTrailheadPoints}" />
+                    </span>
+                </div>
+            </div>
+
+            <div class="bottom-row">
+                <div class="south-center-left" style="display: flex; flex-direction: column; align-items: center; position: relative; padding: 15px 10px;">
+                    <div class="ai-trigger-anchor">
+                        <lightning:buttonIcon iconName="utility:sparkles" variant="bare" onclick="{!c.handleAIPopup}" class="ai-icon-ghost" title="Biological Audit" value="Health"/>
+                    </div>
+                    <div style="z-index: 1; width: 100%; display: flex; justify-content: center; position: relative; align-items: center;">
+                        <p class="chart-title" style="margin: 0; color: #8b949e; font-weight: 600; letter-spacing: 2px;">HEALTH INTELLIGENCE</p>
+                        <span class="{! 'status-bracket ' + v.statusColor }" 
+                              style="{! 'position: absolute; right: 5px; top: 1px; font-size: 7px; font-weight: 900; font-family: monospace; height: 14px; min-width: 54px; display: grid; place-items: center; border: 1px solid; border-radius: 2px; text-transform: uppercase; transition: all 0.3s ease; letter-spacing: 1px; padding: 0; ' + 
+                                       (v.clinicalStatus == 'STALLED' ? 'color: #8b949e; border-color: #8b949e; box-shadow: none;' : 
+                                        v.clinicalStatus == 'OPTIMAL' ? 'color: #84ff33; border-color: #84ff33; box-shadow: 0 0 8px #84ff33;' : 
+                                        v.clinicalStatus == 'PERFECT' ? 'color: #ccff33; border-color: #ccff33; box-shadow: 0 0 8px #ccff33;' : 
+                                        v.clinicalStatus == 'CAUTION' ? 'color: #ffbf00; border-color: #ffbf00; box-shadow: 0 0 8px #ffbf00;' : 
+                                        v.clinicalStatus == 'DANGER' ? 'color: #ff4444; border-color: #ff4444; box-shadow: 0 0 12px #ff4444;' : 
+                                        'color: #2596be; border-color: #2596be;') }">
+                            {!v.clinicalStatus}
+                        </span>
+                    </div>
+                    
+                    <div style="flex-grow: 1;"></div>
+                    <div class="macro-container" style="position: relative; height: 160px; width: 160px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                        <div aura:id="svgStage" class="svg-stage" style="width: 100%; height: 100%;">
+                            {!v.macroSVG}
+                        </div>
+                        <div class="macro-center-hub" style="position: absolute; width: 74px; height: 74px; background: #0b0e11; border-radius: 50%; border: 1px solid rgba(37, 150, 190, 0.4); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; pointer-events: none;">
+                            <h2 style="font-size: 24px; font-weight: 600; margin: 0; color: #fff;">{!v.calories}</h2>
+                            <p style="margin: -2px 0 0 0; font-size: 7px; color: #8b949e; font-weight: bold; letter-spacing: 1px; text-transform: uppercase;">KCAL</p>
+                        </div>
+                    </div>
+                    <div style="flex-grow: 1;"></div>
+
+                    <div style="width: 100%; text-align: center; margin-top: 5px; font-family: monospace; letter-spacing: 0.5px; white-space: nowrap;">
+                        <span style="color: #8b949e; font-size: 9px; font-weight: 600;">TDEE </span>      
+                        <span style="color: #fff; font-size: 11px; font-weight: bold;">{!v.rollingTDEE}</span>
+                        <span style="color: #8b949e; margin: 0 6px; opacity: 0.3;">|</span>
+                        <span style="color: #8b949e; font-size: 9px; font-weight: 600;">VELOCITY </span>      
+                        <span style="color: #2596be; font-size: 11px; font-weight: bold;">{!v.weeklyVelocity} <span style="font-size: 8px;">LBS/WK</span></span>
+                        <span style="color: #8b949e; margin: 0 6px; opacity: 0.3;">|</span>
+                        <span style="color: #8b949e; font-size: 9px; font-weight: 600;">TARGET </span>      
+                        <span style="color: #84ff33; font-size: 11px; font-weight: bold;">{!v.recommendedCalories}</span>
+                    </div>
+                </div>
+                
+                <div class="south-center-right" style="display: flex; flex-direction: column; align-items: center; position: relative; padding: 15px 10px;">
+                    <div class="ai-trigger-anchor">
+                        <lightning:buttonIcon iconName="utility:sparkles" variant="bare" onclick="{!c.handleAIPopup}" class="ai-icon-ghost" title="Extraction Projection" value="Velocity"/>
+                    </div>
+                    <button class="carousel-arrow-left" onclick="{!c.toggleVelocityMode}" style="z-index: 10; cursor: pointer;">❮</button>
+                    <button class="carousel-arrow-right" onclick="{!c.toggleVelocityMode}" style="z-index: 10; cursor: pointer;">❯</button>
+                    <div style="z-index: 1;">
+                        <p class="chart-title" style="margin: 0; color: #8b949e; font-weight: 600; letter-spacing: 2px;">
+                            {!v.velocityMode == 'FINANCIAL' ? v.finLabel : v.goalLabel}
+                        </p>
+                    </div>
+                    <div style="flex-grow: 1;"></div>
+                    <div style="position: relative; height: 140px; width: 140px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; z-index: 2;">
+                        <canvas aura:id="velocityChart"></canvas>
+                        <div style="position: absolute; text-align: center; top: 50%; left: 50%; transform: translate(-50%, -35%); width: 100%; pointer-events: none; z-index: 10;">
+                            
+                            <h2 style="font-size: 38px; font-weight: 600; margin: 0; color: #fff;">
+                                {!v.velocityMode == 'FINANCIAL' ? v.daysRemainingFin : v.daysRemainingHealth}
+                            </h2>
+
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 5px;">
+                        <p class="chart-title" style="margin: 0; font-size: 10px; opacity: 0.8;">DAYS REMAINING</p>
+                        
+                        <p style="margin: 2px 0 0 0; font-size: 11px; color: #2596be; font-weight: bold; letter-spacing: 1px;">
+                            PROJECTED: {!v.velocityMode == 'FINANCIAL' ? v.targetDateFin : v.targetDateHealth}
+                        </p>
+
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 10px;">
+                        <div class="{!v.velocityMode == 'FINANCIAL' ? 'dot active-dot' : 'dot'}"></div>
+                        <div class="{!v.velocityMode == 'HEALTH' ? 'dot active-dot' : 'dot'}"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</aura:component>

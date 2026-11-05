@@ -1,0 +1,89 @@
+.THIS.monolith-container {
+    background-color: #0b0e11;
+    color: #ffffff;
+    min-height: 850px; 
+    height: auto; 
+    display: flex;
+    padding: 0; 
+    gap: 0; 
+    box-sizing: border-box;
+    font-family: "Segoe UI", Roboto, sans-serif;
+    border-radius: 40px; 
+    overflow: hidden; /* This is the 'Clipper' for the left side */
+}
+
+/* --- 1. THE NAVIGATION WALL (Sharpened Pillar) --- */
+.THIS .menu-wall {
+    width: 240px;
+    background-color: #1c2128;
+    border-radius: 0; /* All 4 corners now a straight line */
+    flex-shrink: 0;
+    border-right: 1px solid rgba(255,255,255,0.05);
+}
+
+/* --- 2. THE DATA BLOCK (12-Column Master Grid) --- */
+.THIS .data-block {
+    flex-grow: 1;
+    display: grid;
+    grid-template-rows: 1fr 2fr 2fr 2fr; 
+    grid-template-columns: 7fr 3fr; 
+    padding: 20px; 
+    gap: 20px;
+}
+
+/* --- LEFT COLUMN ALIGNMENT --- */
+.THIS .anchor-row {
+    grid-column: 1 / 2;
+    grid-row: 1 / 2;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.THIS .center-stage {
+    grid-column: 1 / 2;
+    grid-row: 2 / 4; 
+    background-color: #1c2128;
+    border-radius: 24px;
+}
+
+.THIS .bottom-row {
+    grid-column: 1 / 2;
+    grid-row: 4 / 5; 
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* --- RIGHT COLUMN ALIGNMENT (Balanced Zipper) --- */
+.THIS .northeast-node {
+    grid-column: 2 / 3;
+    grid-row: 1 / 3; 
+    background-color: #1c2128;
+    border-radius: 24px;
+}
+
+.THIS .southeast-node {
+    grid-column: 2 / 3;
+    grid-row: 3 / 5; 
+    background-color: #1c2128;
+    border-radius: 24px;
+}
+
+/* --- UNIVERSAL COMPONENT STYLING --- */
+.THIS .top-node, 
+.THIS .northeast-node, 
+.THIS .southeast-node, 
+.THIS .south-center-left, 
+.THIS .south-center-right, 
+.THIS .center-stage {
+    background-color: #1c2128;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.5);
+}

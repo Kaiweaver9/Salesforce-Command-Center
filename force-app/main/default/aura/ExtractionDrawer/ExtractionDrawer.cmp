@@ -1,0 +1,19 @@
+<aura:component>
+    <aura:attribute name="title" type="String" default="MODULE_ALPHA"/>
+    <aura:attribute name="isOpen" type="Boolean" default="false"/>
+    <aura:attribute name="statusColor" type="String" default="#2596be"/>
+
+    <div class="{!v.isOpen ? 'drawer-shell open' : 'drawer-shell'}">
+        <div class="drawer-header" style="{!'border-bottom: 2px solid ' + v.statusColor}">
+            <span class="header-text">{!v.title}</span>
+            <lightning:buttonIcon iconName="utility:close" 
+                                  variant="bare-inverse" 
+                                  onclick="{!c.toggleDrawer}" 
+                                  class="close-btn"/>
+        </div>
+        
+        <div class="drawer-body">
+            {!v.body}
+        </div>
+    </div>
+</aura:component>

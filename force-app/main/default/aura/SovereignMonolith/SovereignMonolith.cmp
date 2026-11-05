@@ -1,0 +1,24 @@
+<aura:component controller="ExtractionController" implements="flexipage:availableForAllPageTypes">
+    <div class="monolith-container">
+        
+        <div class="menu-wall">MENU</div>
+
+        <div class="data-block">
+            <div class="anchor-row">
+                <div class="top-node">BALANCE</div>
+                <div class="top-node">WEIGHT</div>
+                <div class="top-node">PILLS</div>
+            </div>
+
+            <div class="center-stage">PERFORMANCE GRAPH</div>
+
+            <div class="bottom-row">
+                <div class="south-center-left">MACROS</div>
+                <div class="south-center-right">RESERVE 2</div>
+            </div>
+
+            <div class="northeast-node">NORTHEAST</div>
+            <div class="southeast-node">SOUTHEAST</div>
+        </div>
+    </div>
+</aura:component>

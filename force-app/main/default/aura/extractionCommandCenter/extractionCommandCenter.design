@@ -1,0 +1,9 @@
+<design:component label="Sovereign Monolith: Extraction CC">
+    <design:attribute name="height" label="Component Height" default="900px"/>
+    
+    <design:attribute name="finLabel" label="Financial Goal Name" default="EXTRACTION FUND"/>
+    <design:attribute name="finTarget" label="Financial Target ($)" default="10000.00"/>
+    
+    <design:attribute name="goalLabel" label="Performance Goal Name" default="WEIGHT GOAL"/>
+    <design:attribute name="goalTarget" label="Weight Target (LBS)" default="185.0"/>
+</design:component>
