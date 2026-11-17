@@ -1,0 +1,106 @@
+<template>
+    <aside class="sidebar-container" onmouseleave={handleMouseLeave}>
+        <!-- Mobile Seamless Top Bar & Top-Left Hamburger (Hidden on Desktop) -->
+        <div class="mobile-header-bar">
+            <button class="hamburger-btn" onclick={toggleMobileMenu} aria-label="Toggle Navigation Menu">
+                <span class={hamburgerLine1Class}></span>
+                <span class={hamburgerLine2Class}></span>
+                <span class={hamburgerLine3Class}></span>
+            </button>
+            <div class="mobile-clock-group">
+                <div class="mobile-ops-label">[ SYSTEM OPS ]</div>
+                <div class="mobile-date-readout">{currentDate}</div>
+                <div class="mobile-time-readout">{currentTime}</div>
+            </div>
+        </div>
+
+        <!-- Desktop Header & Clock (Hidden on Mobile) -->
+        <div class="sidebar-header desktop-header">
+            <div class="vertical-text">[ SYSTEM OPS ]</div>
+            <div class="timestamp-container">
+                <div>{currentDate}</div>
+                <div class="time-readout">{currentTime}</div>
+            </div>
+        </div>
+
+        <!-- Navigation Sections (Drawer on Mobile, Static Sidebar on Desktop) -->
+        <div class={sidebarContentClass}>
+            <div class="nav-indicator-bar" lwc:spread={indicatorStyling}></div>
+
+            <!-- Profile Section -->
+            <div class="nav-section">
+                <p class="nav-category-label">PROFILE</p>
+                <div class={profileStatsClass} data-id="profile" onmouseenter={handleMouseEnter} onclick={handleNavClick}>
+                    <lightning-icon icon-name="utility:user" size="xx-small" class="nav-icon"></lightning-icon>
+                    <span>Profile Statistics</span>
+                </div>
+                <div class={currentGoalsClass} data-id="goals" onmouseenter={handleMouseEnter} onclick={handleNavClick}>
+                    <lightning-icon icon-name="utility:priority" size="xx-small" class="nav-icon"></lightning-icon>
+                    <span>Current Goals</span>
+                </div>
+                <div class={upcomingTasksClass} data-id="tasks" onmouseenter={handleMouseEnter} onclick={handleNavClick}>
+                    <lightning-icon icon-name="utility:event" size="xx-small" class="nav-icon"></lightning-icon>
+                    <span>Upcoming Tasks</span>
+                </div>
+            </div>
+
+            <!-- Analytics Section -->
+            <div class="nav-section">
+                <p class="nav-category-label">ANALYTICS</p>
+                <div class={dashboardClass} data-id="dashboard" onmouseenter={handleMouseEnter} onclick={handleNavClick}>
+                    <lightning-icon icon-name="utility:apps" size="xx-small" class="nav-icon"></lightning-icon>
+                    <span>Dashboard</span>
+                </div>
+                <div class={financialClass} data-id="financial" onmouseenter={handleMouseEnter} onclick={handleNavClick}>
+                    <lightning-icon icon-name="utility:moneybag" size="xx-small" class="nav-icon"></lightning-icon>
+                    <span>Financial Intelligence</span>
+                </div>
+                <div class={healthClass} data-id="health" onmouseenter={handleMouseEnter} onclick={handleNavClick}>
+                    <lightning-icon icon-name="utility:activity" size="xx-small" class="nav-icon"></lightning-icon>
+                    <span>Health Intelligence</span>
+                </div>
+                <div class={performanceClass} data-id="performance" onmouseenter={handleMouseEnter} onclick={handleNavClick}>
+                    <lightning-icon icon-name="utility:rating" size="xx-small" class="nav-icon"></lightning-icon>
+                    <span>Performance Index</span>
+                </div>
+            </div>
+
+            <!-- Resources Section -->
+            <div class="nav-section">
+                <p class="nav-category-label">RESOURCES</p>
+                <div class={calculatorClass} data-id="calculator" onmouseenter={handleMouseEnter} onclick={handleNavClick}>
+                    <lightning-icon icon-name="utility:formula" size="xx-small" class="nav-icon"></lightning-icon>
+                    <span>Paycheck Calculator</span>
+                </div>
+                <div class={resourcesClass} data-id="resources" onmouseenter={handleMouseEnter} onclick={handleNavClick}>
+                    <lightning-icon icon-name="utility:link" size="xx-small" class="nav-icon"></lightning-icon>
+                    <span>External Resources</span>
+                </div>
+                <div class={projectsClass} data-id="projects" onmouseenter={handleMouseEnter} onclick={handleNavClick}>
+                    <lightning-icon icon-name="utility:setup_assistant_guide" size="xx-small" class="nav-icon"></lightning-icon>
+                    <span>Projects</span>
+                </div>
+            </div>
+
+            <!-- System Settings Section -->
+            <div class="nav-section system-footer">
+                <p class="nav-category-label">SYSTEM SETTINGS</p>
+                <div class="nav-item nav-item-toggle" data-id="privacy" onmouseenter={handleMouseEnter}>
+                    <div class="toggle-label-group">
+                        <lightning-icon icon-name="utility:hide" size="xx-small" class="nav-icon"></lightning-icon>
+                        <span>Privacy Mode</span>
+                    </div>
+                    <lightning-input type="toggle" variant="label-hidden" name="privacyMode" class="compact-toggle" onchange={handlePrivacyToggle}></lightning-input>
+                </div>
+                <div class={themeClass} data-id="theme" onmouseenter={handleMouseEnter} onclick={handleNavClick}>
+                    <lightning-icon icon-name="utility:palette" size="xx-small" class="nav-icon"></lightning-icon>
+                    <span>Theme</span>
+                </div>
+                <div class={settingsClass} data-id="settings" onmouseenter={handleMouseEnter} onclick={handleNavClick}>
+                    <lightning-icon icon-name="utility:settings" size="xx-small" class="nav-icon"></lightning-icon>
+                    <span>Settings</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+</template>

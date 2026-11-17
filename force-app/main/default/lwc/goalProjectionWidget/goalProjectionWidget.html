@@ -1,0 +1,39 @@
+<template>
+    <div class="projection-card">
+      <!-- Header -->
+        <div class="projection-header">
+            <div class="goal-title">
+                <span class="goal-prefix">CURRENT GOAL:</span>
+                <span class="goal-name">{activeGoalLabel}</span>
+            </div>
+            <span class="progress-badge">{displayProgress}%</span>
+        </div>
+
+        <!-- Left / Right Carousel Arrows -->
+        <button class="nav-arrow left-arrow" onclick={handleToggleMode} title="Previous Goal">❮</button>
+        <button class="nav-arrow right-arrow" onclick={handleToggleMode} title="Next Goal">❯</button>
+
+        <!-- Sculpted Tapered Horseshoe Gauge -->
+        <div class="gauge-stage">
+            <svg viewBox="0 0 200 155" class="sculpted-gauge-svg" lwc:dom="manual"></svg>
+
+            <!-- Center Readout -->
+            <div class="gauge-center-readout">
+                <div class={daysRemainingClass}>{displayDaysRemaining}</div>
+                <div class="days-sublabel">DAYS REMAINING</div>
+            </div>
+        </div>
+
+        <!-- Footer Projection Date & Pagination Dots -->
+        <div class="projection-footer">
+            <div class="projected-date-line">
+                <span class="projected-prefix">PROJECTED:</span>
+                <span class="projected-value">{displayProjectedDate}</span>
+            </div>
+            <div class="carousel-dots">
+                <span class={finDotClass} data-mode="FINANCIAL" onclick={handleSelectDot}></span>
+                <span class={healthDotClass} data-mode="HEALTH" onclick={handleSelectDot}></span>
+            </div>
+        </div>
+    </div>
+</template>

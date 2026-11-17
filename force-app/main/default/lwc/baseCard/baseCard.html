@@ -1,0 +1,13 @@
+<template>
+    <article class="card-chassis">
+        <template lwc:if={title}>
+            <header class="card-header">
+                <h2 class="card-title">{title}</h2>
+                <slot name="headerAction"></slot>
+            </header>
+        </template>
+        <div class="card-body">
+            <slot></slot>
+        </div>
+    </article>
+</template>

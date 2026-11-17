@@ -1,0 +1,54 @@
+<template>
+    <div class="dashboard-container">
+        <!-- Tier 3 Module: Left Sidebar Navigation -->
+        <aside class="sidebar-region">
+            <c-sidebar-nav 
+                onnavigate={handleNavigate} 
+                onprivacytoggle={handlePrivacyToggle}>
+            </c-sidebar-nav>
+        </aside>
+
+        <!-- Primary Multi-Card Command Center Grid -->
+        <template lwc:if={isDashboardView}>
+            <main class="main-content-grid">
+                <!-- Top Row: Live Animated Tickers -->
+                <div class="top-ticker-region">
+                    <c-top-ticker is-privacy-mode={isPrivacyMode}></c-top-ticker>
+                </div>
+
+                <!-- Center Stage: Analytics Hub -->
+                <div class="center-chart-region">
+                    <c-main-chart-hub is-privacy-mode={isPrivacyMode}></c-main-chart-hub>
+                </div>
+
+                <!-- Top Right: Daily Performance Widget -->
+                <div class="top-right-region">
+                    <c-base-card title="Daily Performance"></c-base-card>
+                </div>
+
+                <!-- Bottom Left & Center: Health & Goal Projections -->
+                <div class="bottom-metrics-region">
+                    <c-health-hub></c-health-hub>
+                    <c-goal-projection-widget is-privacy-mode={isPrivacyMode}></c-goal-projection-widget>
+                </div>
+
+                <!-- Bottom Right: Trailhead / Flexible Widget -->
+                <div class="bottom-right-region">
+                    <c-base-card title="Trailhead Progress"></c-base-card>
+                </div>
+            </main>
+        </template>
+
+        <!-- Single-Page Module View (Swaps in when any other nav item is clicked) -->
+        <template lwc:else>
+            <main class="single-page-grid">
+                <c-base-card title={activeViewLabel}>
+                    <div class="single-page-placeholder">
+                        <p>ACTIVE MODULE: <strong>{activeViewLabel}</strong></p>
+                        <p class="subtext">Dedicated single-page workspace ready for component integration.</p>
+                    </div>
+                </c-base-card>
+            </main>
+        </template>
+    </div>
+</template>

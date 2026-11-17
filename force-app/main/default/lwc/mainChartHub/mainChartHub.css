@@ -1,0 +1,231 @@
+:host {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.chart-hub-card {
+    background-color: var(--lwc-color-bg-elevated, #1c2128);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 20px 24px;
+    height: 100%;
+    min-height: 310px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.6);
+}
+
+.stage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.chart-title {
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    color: #8b949e;
+    text-transform: uppercase;
+}
+
+.perspective-selector {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    padding: 0 8px;
+    height: 26px;
+}
+
+.selector-divider {
+    width: 1px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.15);
+    margin: 0 8px;
+}
+
+.neon-dropdown {
+    --slds-c-button-text-color: #8b949e;
+    --slds-c-button-text-color-hover: #ffffff;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+}
+
+.filter-group {
+    display: flex;
+    gap: 8px;
+}
+
+.filter-pill {
+    background: transparent;
+    border: 1px solid rgba(37, 150, 190, 0.3);
+    color: #8b949e;
+    padding: 3px 12px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    letter-spacing: 1px;
+}
+
+.filter-pill.active {
+    border-color: var(--lwc-color-accent-blue, #2596be);
+    color: #ffffff;
+    background: rgba(37, 150, 190, 0.15);
+    box-shadow: 0 0 12px rgba(37, 150, 190, 0.35);
+}
+
+.filter-pill:hover:not(.active) {
+    border-color: rgba(37, 150, 190, 0.8);
+    color: #ffffff;
+}
+
+.canvas-container {
+    flex: 1 1 auto;
+    position: relative;
+    width: 100%;
+    min-height: 240px;
+}
+
+.main-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* HUD Overlays */
+.left-hud-overlay {
+    position: absolute;
+    top: 2px;
+    left: 44px;
+    z-index: 5;
+    pointer-events: none;
+    display: flex;
+    gap: 18px;
+}
+
+.right-hud-overlay {
+    position: absolute;
+    top: 2px;
+    right: 8px;
+    z-index: 5;
+    text-align: right;
+    pointer-events: none;
+}
+
+.hud-sub-label {
+    display: block;
+    color: #8b949e;
+    font-size: 7px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 2px;
+}
+
+.hud-main-value {
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+}
+
+.hud-masked {
+    color: #8b949e;
+    font-size: 11px;
+    letter-spacing: 2px;
+}
+
+.phase-readout {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 1px;
+}
+
+.phase-active { color: #ffffff; }
+.phase-muted { color: #8b949e; }
+.arrow-green { color: var(--lwc-color-accent-green, #84ff33); font-size: 8.5px; line-height: 1; }
+.arrow-red { color: #ff4444; font-size: 8.5px; line-height: 1; }
+.arrow-blue { color: var(--lwc-color-accent-blue, #2596be); font-size: 8.5px; line-height: 1; }
+.arrow-muted { color: #8b949e; font-size: 8.5px; line-height: 1; }
+
+.phase-week-tag {
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 1px;
+    color: #8b949e;
+    margin-left: 2px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.min-max-row {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 3px;
+}
+
+.mini-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.mini-label {
+    color: #8b949e;
+    font-size: 6px;
+    letter-spacing: 1px;
+}
+
+.mini-val {
+    color: #8b949e;
+    font-size: 8px;
+    font-weight: 600;
+}
+
+.fin-right-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+}
+
+.fin-income-val {
+    color: var(--lwc-color-accent-green, #84ff33);
+    font-size: 9px;
+    font-weight: 700;
+}
+
+.fin-expense-val {
+    color: #ff4444;
+    font-size: 9px;
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .phase-readout,
+    .phase-week-tag {
+        font-size: 8.5px;
+        letter-spacing: 0.8px;
+    }
+}

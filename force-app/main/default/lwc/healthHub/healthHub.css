@@ -1,0 +1,664 @@
+:host {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+}
+
+.health-card {
+    background-color: var(--lwc-color-bg-elevated, #1c2128);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.6);
+    padding: 16px 14px 14px 14px;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    color: #ffffff;
+}
+
+/* --- TOP HEADER & STATUS BADGE --- */
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 4px;
+    position: relative;
+    z-index: 2;
+}
+
+.header-title-btn {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: calc(100% - 86px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 0.2s ease;
+}
+
+.header-title-btn:hover {
+    opacity: 0.8;
+}
+
+.header-root {
+    color: #8b949e;
+}
+
+.header-active {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.status-badge {
+    position: absolute;
+    right: 2px;
+    font-size: 8px;
+    font-weight: 700;
+    font-family: monospace;
+    letter-spacing: 1px;
+    padding: 1px 7px;
+    border-radius: 3px;
+    border: 1px solid #2596be;
+    color: #2596be;
+    text-transform: uppercase;
+}
+
+.status-optimal {
+    color: #84ff33;
+    border-color: rgba(132, 255, 51, 0.45);
+    background: rgba(132, 255, 51, 0.06);
+}
+
+.status-recovery {
+    color: #2596be;
+    border-color: rgba(37, 150, 190, 0.5);
+    background: rgba(37, 150, 190, 0.08);
+}
+
+.status-caution,
+.status-stalled {
+    color: #ffbf00;
+    border-color: rgba(255, 191, 0, 0.5);
+    background: rgba(255, 191, 0, 0.06);
+}
+
+.status-danger {
+    color: #ff4444;
+    border-color: rgba(255, 68, 68, 0.6);
+    background: rgba(255, 68, 68, 0.08);
+}
+
+/* --- CAROUSEL STAGE --- */
+.carousel-stage {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    min-height: 0;
+    min-width: 0;
+    gap: 2px;
+}
+
+.nav-arrow {
+    background: transparent;
+    border: none;
+    color: rgba(139, 148, 158, 0.45);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 6px 3px;
+    transition: color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.nav-arrow:hover {
+    color: #84ff33;
+}
+
+.slide-body {
+    flex: 1 1 auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* --- SLEEK DARK-MINIMALIST COLOR TOKENS --- */
+.protein-bg { background-color: #84ff33; }
+.carbs-bg { background-color: #2596be; }
+.fat-bg { background-color: #94a3b8; }
+
+.protein-stroke { stroke: #84ff33; }
+.carbs-stroke { stroke: #2596be; }
+.fat-stroke { stroke: #94a3b8; }
+
+.label-green { color: #84ff33; }
+.label-blue { color: #2596be; }
+.label-slate { color: #94a3b8; }
+.split-sep { color: #6e7681; }
+
+/* --- SUBTLE CASH-FLOW STYLE CHART MUTING (BRIGHTENS ON CARD HOVER) --- */
+.macro-ring,
+.horizontal-bar-svg,
+.bar-column-svg {
+    opacity: 0.58;
+    transition: opacity 0.25s ease;
+}
+
+.health-card:hover .macro-ring,
+.health-card:hover .horizontal-bar-svg,
+.health-card:hover .bar-column-svg {
+    opacity: 1;
+}
+
+.horizontal-bar-svg {
+    width: 100%;
+    height: 9px;
+    border-radius: 999px;
+    overflow: hidden;
+    display: block;
+}
+
+/* --- SLIDE 1: DAILY MACROS (CENTERED & BALANCED) --- */
+.slide-one-layout {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    min-width: 0;
+    padding: 0 2px;
+    gap: 14px;
+}
+
+.slide-one-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+}
+
+.ring-wrapper {
+    position: relative;
+    width: 84px;
+    height: 84px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.macro-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.ring-track {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.06);
+    stroke-width: 8;
+}
+
+.ring-segment {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: butt;
+    cursor: pointer;
+    transition: stroke-width 0.15s ease, opacity 0.15s ease;
+}
+
+.ring-segment.is-highlighted,
+.ring-segment:hover {
+    stroke-width: 10;
+}
+
+.ring-center {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    pointer-events: none;
+}
+
+.ring-main-val {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.1;
+    color: #ffffff;
+    letter-spacing: -0.3px;
+}
+
+.ring-sub-val {
+    font-size: 6px;
+    font-weight: 500;
+    letter-spacing: 0.4px;
+    color: #8b949e;
+    margin-top: 2px;
+}
+
+.macro-mini-grid {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    min-width: 0;
+}
+
+.macro-mini-card {
+    background: rgba(11, 14, 17, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    padding: 6px 4px;
+    cursor: pointer;
+    min-width: 0;
+    transition: border-color 0.15s ease;
+}
+
+.macro-mini-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.mini-card-top {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin-bottom: 3px;
+}
+
+.macro-dot {
+    width: 4.5px;
+    height: 4.5px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.mini-macro-name {
+    font-size: 6.5px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    color: #8b949e;
+    white-space: nowrap;
+}
+
+.mini-macro-grams {
+    font-size: 10.5px;
+    font-weight: 500;
+    color: #ffffff;
+    white-space: nowrap;
+}
+
+.target-slash {
+    font-size: 7.5px;
+    font-weight: 400;
+    color: #6e7681;
+}
+
+.delta-pill {
+    font-size: 8px;
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+.delta-pill.positive {
+    color: #84ff33;
+}
+
+.delta-pill.neutral {
+    color: #8b949e;
+}
+
+.ratio-comparison {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+}
+
+.ratio-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+}
+
+.target-split-label {
+    font-size: 8.5px;
+    font-weight: 600;
+    color: #8b949e;
+    letter-spacing: 0.6px;
+}
+
+/* --- SLIDE 2: 7-DAY MACRO TRENDS --- */
+.slide-two-layout {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    padding: 0 4px;
+    gap: 6px;
+}
+
+.trends-top-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.trends-period-label {
+    font-size: 7.5px;
+    font-weight: 600;
+    letter-spacing: 1.4px;
+    color: #8b949e;
+    text-align: center;
+}
+
+.trends-readout-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    text-align: center;
+}
+
+.trend-stat-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+}
+
+.trend-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 7px;
+    font-weight: 600;
+    letter-spacing: 0.7px;
+    color: #c9d1d9;
+    padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.trend-pct {
+    font-size: 13px;
+    font-weight: 500;
+    color: #ffffff;
+    line-height: 1.15;
+}
+
+.trend-target-hint {
+    font-size: 8px;
+    font-weight: 400;
+    color: #6e7681;
+}
+
+.trend-grams {
+    font-size: 8px;
+    font-weight: 400;
+    color: #8b949e;
+}
+
+.stacked-bars-container {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    min-height: 82px;
+    padding: 2px 6px 0 6px;
+    gap: 10px;
+}
+
+.bar-item {
+    flex: 1 1 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.bar-item.is-dimmed {
+    opacity: 0.25;
+}
+
+.bar-item.is-selected {
+    transform: translateY(-2px);
+}
+
+.bar-item.is-selected .bar-column-svg {
+    box-shadow: 0 0 8px rgba(132, 255, 51, 0.4);
+    outline: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.bar-column-svg {
+    width: 14px;
+    flex: 1 1 auto;
+    min-height: 66px;
+    border-radius: 3px;
+    overflow: hidden;
+    display: block;
+}
+
+.bar-day-label {
+    font-size: 8px;
+    font-weight: 500;
+    color: #6e7681;
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+.bar-day-label.active-day {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+/* --- SLIDE 3: BODY COMPOSITION (INTEGRATED VERTICAL BALANCE) --- */
+.slide-three-layout {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+    padding: 0 4px;
+    gap: 12px;
+}
+
+.comp-bar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.comp-overview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 8.5px;
+}
+
+.comp-callout {
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.comp-muted-arrow {
+    color: #8b949e;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.comp-split-numbers {
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.tissue-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.tissue-card {
+    background: rgba(11, 14, 17, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.tissue-title {
+    font-size: 7.5px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    color: #8b949e;
+    margin-bottom: 3px;
+}
+
+.tissue-main {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.tissue-val {
+    font-size: 14px;
+    font-weight: 500;
+    color: #ffffff;
+}
+
+.unit-small {
+    font-size: 8px;
+    font-weight: 400;
+    color: #8b949e;
+}
+
+.tissue-delta {
+    font-size: 9px;
+    font-weight: 600;
+}
+
+.delta-green {
+    color: #84ff33;
+}
+
+.delta-red {
+    color: #ff4444;
+}
+
+.delta-muted {
+    color: #8b949e;
+}
+
+.biomarker-strip {
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+    letter-spacing: 0.8px;
+    color: #8b949e;
+}
+
+.biomarker-strip strong {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+/* --- PAGINATION DOTS --- */
+.carousel-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 6px 0;
+}
+
+.dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #161b22;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.dot.active {
+    background: #84ff33;
+    border-color: #84ff33;
+    box-shadow: 0 0 6px rgba(132, 255, 51, 0.5);
+}
+
+/* --- PERSISTENT BOTTOM TELEMETRY --- */
+.telemetry-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    font-size: 8.5px;
+    letter-spacing: 0.8px;
+}
+
+.telemetry-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.tele-label {
+    color: #6e7681;
+    font-weight: 600;
+}
+
+.tele-val {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.tele-val.vel-positive {
+    color: #2596be;
+}
+
+.tele-val.vel-negative {
+    color: #84ff33;
+}
+
+.tele-val.target-green {
+    color: #84ff33;
+}
+
+.tele-divider {
+    color: rgba(255, 255, 255, 0.12);
+}

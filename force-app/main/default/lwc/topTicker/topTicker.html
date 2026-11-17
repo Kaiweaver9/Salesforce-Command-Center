@@ -1,0 +1,87 @@
+<template>
+    <div class="ticker-grid">
+        <!-- Card 1: Current Balance / Net Worth Vertical Pivot -->
+        <div class="ticker-card balance-gradient">
+            <div class="ticker-window-mask">
+                <div class="ticker-vertical-slider">
+                    <div class="ticker-frame">
+                        <p class="metric-label">CURRENT BALANCE</p>
+                        <template lwc:if={isPrivacyMode}>
+                            <div class="privacy-mask"></div>
+                        </template>
+                        <template lwc:else>
+                            <h2 class="metric-value">
+                                <lightning-formatted-number value={financialBalance} format-style="currency" currency-code="USD"></lightning-formatted-number>
+                            </h2>
+                        </template>
+                    </div>
+                    <div class="ticker-frame">
+                        <p class="metric-label">NET WORTH</p>
+                        <template lwc:if={isPrivacyMode}>
+                            <div class="privacy-mask"></div>
+                        </template>
+                        <template lwc:else>
+                            <h2 class="metric-value">
+                                <lightning-formatted-number value={totalNetWorth} format-style="currency" currency-code="USD"></lightning-formatted-number>
+                            </h2>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Current Weight / Target Calories Vertical Pivot -->
+        <div class="ticker-card weight-gradient">
+            <div class="ticker-window-mask">
+                <div class="ticker-vertical-slider">
+                    <div class="ticker-frame">
+                        <p class="metric-label">CURRENT WEIGHT</p>
+                        <h2 class="metric-value">{currentBodyWeight} <span class="metric-unit">LBS</span></h2>
+                    </div>
+                    <div class="ticker-frame">
+                        <p class="metric-label">TARGET CALORIES</p>
+                        <h2 class="metric-value">{targetCalories} <span class="metric-unit">KCAL</span></h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Stacked Goal Summary Pills -->
+        <div class="summary-stack">
+            <!-- Financial Goal Summary -->
+            <div class="summary-pill-card">
+                <div class="summary-info">
+                    <p class="summary-label">{financialGoalLabel}</p>
+                    <template lwc:if={isPrivacyMode}>
+                        <div class="privacy-mask-small"></div>
+                    </template>
+                    <template lwc:else>
+                        <h3 class="summary-target">
+                            <lightning-formatted-number value={financialTarget} format-style="currency" currency-code="USD" maximum-fraction-digits="0"></lightning-formatted-number>
+                        </h3>
+                    </template>
+                </div>
+                <div class="momentum-zone">
+                    <span class={financialTrendClass}>{financialTrendIcon}</span>
+                </div>
+                <div class={financialProgressPillClass}>
+                    {financialProgress}%
+                </div>
+            </div>
+
+            <!-- Health Goal Summary -->
+            <div class="summary-pill-card">
+                <div class="summary-info">
+                    <p class="summary-label">{healthGoalLabel}</p>
+                    <h3 class="summary-target">{healthTarget} LBS</h3>
+                </div>
+                <div class="momentum-zone">
+                    <span class={healthTrendClass}>{healthTrendIcon}</span>
+                </div>
+                <div class={healthProgressPillClass}>
+                    {healthProgress}%
+                </div>
+            </div>
+        </div>
+    </div>
+</template>

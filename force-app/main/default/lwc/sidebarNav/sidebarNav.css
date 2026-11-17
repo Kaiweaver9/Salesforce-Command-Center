@@ -1,0 +1,288 @@
+:host {
+    display: block;
+    height: 100%;
+}
+
+.sidebar-container {
+    width: 250px;
+    background-color: var(--lwc-color-bg-elevated, #1c2128);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 30px 0;
+    box-sizing: border-box;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile Header Bar (Hidden on Desktop) */
+.mobile-header-bar {
+    display: none;
+}
+
+.desktop-header {
+    display: flex;
+}
+
+.sidebar-header {
+    height: 80px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    margin-bottom: 20px;
+}
+
+.vertical-text {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: #8b949e;
+    font-weight: 600;
+}
+
+.timestamp-container {
+    color: #8b949e;
+    font-size: 10px;
+    font-family: 'Montserrat', sans-serif;
+    letter-spacing: 1px;
+    margin-top: 10px;
+    text-align: center;
+    width: 100%;
+}
+
+.time-readout {
+    margin-top: 4px;
+    font-family: monospace;
+    color: var(--lwc-color-accent-green, #84ff33);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+}
+
+.sidebar-content {
+    width: 100%;
+    padding: 0 15px;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.nav-list-container {
+    position: relative;
+}
+
+/* Sliding Hover Indicator Bar */
+.nav-indicator-bar {
+    position: absolute;
+    left: 15px;
+    width: 3px;
+    height: 36px;
+    background-color: var(--lwc-color-accent-green, #84ff33);
+    box-shadow: 0 0 10px rgba(132, 255, 51, 0.6);
+    transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease;
+    pointer-events: none;
+    border-radius: 0 2px 2px 0;
+    z-index: 2;
+}
+
+.nav-section {
+    margin-bottom: 25px;
+}
+
+.nav-category-label {
+    font-size: 8px;
+    font-weight: 800;
+    color: #4a5568;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    padding-left: 15px;
+    text-transform: uppercase;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    color: #8b949e;
+    font-size: 11px;
+    margin-bottom: 2px;
+    position: relative;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.02);
+    color: #ffffff;
+}
+
+/* Permanent Active Page State */
+.active-nav-green {
+    background: linear-gradient(90deg, rgba(132, 255, 51, 0.1) 0%, transparent 100%) !important;
+    border-left: 3px solid var(--lwc-color-accent-green, #84ff33) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+.nav-item-toggle {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-top: 6px;
+    height: 38px;
+}
+
+.toggle-label-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.compact-toggle {
+    display: flex;
+    align-items: center;
+    transform: scale(0.85);
+    transform-origin: right top;
+    margin-top: 2px;
+    margin-right: -4px;
+}
+
+.nav-icon {
+    --slds-c-icon-color-foreground-default: #4a5568;
+}
+
+.nav-item:hover .nav-icon,
+.active-nav-green .nav-icon {
+    --slds-c-icon-color-foreground-default: #ffffff;
+}
+
+/* Mobile Breakpoint */
+@media (max-width: 1024px) {
+    .sidebar-container {
+        width: 100% !important;
+        height: auto !important;
+        border-right: none !important;
+        padding: 12px 0 8px 0 !important;
+        box-shadow: none !important;
+        background-color: transparent !important;
+        position: relative;
+        z-index: 100;
+    }
+
+    .desktop-header,
+    .sidebar-content,
+    .nav-indicator-bar {
+        display: none;
+    }
+
+    /* 3-Column Grid: Matches the 16px side padding of the cards below */
+    .mobile-header-bar {
+        display: grid;
+        grid-template-columns: 32px 1fr 32px;
+        align-items: start;
+        width: 100%;
+        padding: 0 16px;
+        box-sizing: border-box;
+        background: transparent;
+    }
+
+    /* Minimalist 3-Line Hamburger nestled cleanly in the top-left corner */
+    .hamburger-btn {
+        grid-column: 1;
+        justify-self: start;
+        align-self: start;
+        position: relative;
+        left: 0;
+        top: 1px;
+        background: transparent;
+        border: none;
+        padding: 4px 0;
+        margin: 0;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 4px;
+        z-index: 110;
+    }
+
+    .hamburger-line {
+        display: block;
+        width: 16px;
+        height: 1px;
+        flex-shrink: 0;
+        background-color: #8b949e;
+        border-radius: 1px;
+        transition: transform 0.25s ease, opacity 0.2s ease, background-color 0.2s ease;
+    }
+
+    .hamburger-btn:hover .hamburger-line {
+        background-color: var(--lwc-color-accent-green, #84ff33);
+    }
+
+    /* Morphing animation adjusted for 1px line + 4px gap (5px offset) */
+    .line-1-open {
+        transform: translateY(5px) rotate(45deg);
+        background-color: var(--lwc-color-accent-green, #84ff33);
+    }
+    .line-2-open {
+        opacity: 0;
+    }
+    .line-3-open {
+        transform: translateY(-5px) rotate(-45deg);
+        background-color: var(--lwc-color-accent-green, #84ff33);
+    }
+
+    /* Clock stays cleanly centered in Column 2 */
+    .mobile-clock-group {
+        grid-column: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .mobile-ops-label {
+        font-size: 8px;
+        letter-spacing: 2px;
+        color: #8b949e;
+        font-weight: 600;
+        margin-bottom: 2px;
+    }
+
+    .mobile-date-readout {
+        font-size: 9px;
+        color: #8b949e;
+        letter-spacing: 1px;
+        margin-bottom: 2px;
+    }
+
+    .mobile-time-readout {
+        font-family: monospace;
+        color: var(--lwc-color-accent-green, #84ff33);
+        font-size: 13px;
+        font-weight: bold;
+    }
+
+    /* Slide-down Mobile Drawer */
+    .sidebar-content.mobile-drawer-open {
+        display: block;
+        background-color: var(--lwc-color-bg-elevated, #1c2128);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        margin: 12px 16px 0 16px;
+        padding: 16px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.85);
+        animation: drawerFadeIn 0.2s ease-out;
+    }
+}
+@keyframes drawerFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

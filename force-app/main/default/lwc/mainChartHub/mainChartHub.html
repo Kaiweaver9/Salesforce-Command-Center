@@ -1,0 +1,142 @@
+<template>
+    <div class="chart-hub-card">
+        <!-- Header Bar: Perspective & Metric Selectors + Timeframe Pills -->
+        <div class="stage-header">
+            <div class="header-left">
+                <span class="chart-title">PERFORMANCE</span>
+                <div class="perspective-selector">
+                    <lightning-button-menu
+                        variant="bare"
+                        label={chartView}
+                        onselect={handleChartToggle}
+                        class="neon-dropdown"
+                        icon-name="utility:down"
+                        menu-alignment="left">
+                        <lightning-menu-item value="HEALTH" label="HEALTH" icon-name="utility:activity"></lightning-menu-item>
+                        <lightning-menu-item value="FINANCIAL" label="FINANCIAL" icon-name="utility:moneybag"></lightning-menu-item>
+                    </lightning-button-menu>
+
+                    <div class="selector-divider"></div>
+
+                    <lightning-button-menu
+                        variant="bare"
+                        label={activeMetric}
+                        onselect={handleMetricChange}
+                        class="neon-dropdown"
+                        icon-name="utility:down"
+                        menu-alignment="left">
+                        <template lwc:if={isHealthView}>
+                            <lightning-menu-item value="WEIGHT" label="WEIGHT"></lightning-menu-item>
+                            <lightning-menu-item value="TDEE" label="TDEE"></lightning-menu-item>
+                            <lightning-menu-item value="BODY FAT" label="BODY FAT"></lightning-menu-item>
+                            <lightning-menu-item value="CALORIES" label="CALORIES"></lightning-menu-item>
+                            <lightning-menu-item value="PROTEIN" label="PROTEIN"></lightning-menu-item>
+                            <lightning-menu-item value="CARBS" label="CARBS"></lightning-menu-item>
+                            <lightning-menu-item value="FAT" label="FAT"></lightning-menu-item>
+                        </template>
+                        <template lwc:else>
+                            <lightning-menu-item value="CASH FLOW" label="CASH FLOW" icon-name="utility:moneybag"></lightning-menu-item>
+                            <lightning-menu-item value="NET WORTH" label="NET WORTH" icon-name="utility:trending"></lightning-menu-item>
+                        </template>
+                    </lightning-button-menu>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <template lwc:if={showDailyFilters}>
+                    <button class={btn7DClass} data-timeframe="7D" onclick={handleTimeframeChange}>7D</button>
+                    <button class={btn30DClass} data-timeframe="30D" onclick={handleTimeframeChange}>30D</button>
+                </template>
+                <button class={btnYTDClass} data-timeframe="YTD" onclick={handleTimeframeChange}>YTD</button>
+            </div>
+        </div>
+
+        <!-- Canvas & HUD Overlays -->
+        <div class="canvas-container">
+            <!-- Top-Left HUD Overlay -->
+            <template lwc:if={isHealthView}>
+                <div class="left-hud-overlay">
+                    <span class="hud-sub-label">CURRENT PHASE</span>
+                    <div class="phase-readout">
+                        <span class={phaseTextClass}>{currentPhaseUpper}</span>
+                        <span class={phaseArrowClass}>{phaseArrowIcon}</span>
+                        <template lwc:if={phaseWeekLabel}>
+                            <span class="phase-week-tag">{phaseWeekLabel}</span>
+                        </template>
+                    </div>
+                </div>
+            </template>
+            <template lwc:else>
+                <div class="left-hud-overlay">
+                    <template lwc:if={isNetWorthMetric}>
+                        <div class="fin-hud-block">
+                            <span class="hud-sub-label">CURRENT NET WORTH</span>
+                            <template lwc:if={isPrivacyMode}>
+                                <span class="hud-masked">••••</span>
+                            </template>
+                            <template lwc:else>
+                                <span class="hud-main-value">{formattedNetWorth}</span>
+                            </template>
+                        </div>
+                    </template>
+                    <template lwc:else>
+                        <div class="fin-hud-block">
+                            <span class="hud-sub-label">CURRENT MONTH</span>
+                            <span class="hud-main-value">{currentMonthLabel}</span>
+                        </div>
+                        <div class="fin-hud-block">
+                            <span class="hud-sub-label">NET INCOME</span>
+                            <template lwc:if={isPrivacyMode}>
+                                <span class="hud-masked">••••</span>
+                            </template>
+                            <template lwc:else>
+                                <span class="hud-main-value">{netIncomeAmount}</span>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Top-Right HUD Overlay -->
+            <div class="right-hud-overlay">
+                <template lwc:if={isHealthView}>
+                    <div class="avg-block">
+                        <span class="hud-sub-label">AVG</span>
+                        <div class="hud-main-value">{statAvg}</div>
+                    </div>
+                    <div class="min-max-row">
+                        <div class="mini-stat">
+                            <span class="mini-label">MIN</span>
+                            <span class="mini-val">{statMin}</span>
+                        </div>
+                        <div class="mini-stat">
+                            <span class="mini-label">MAX</span>
+                            <span class="mini-val">{statMax}</span>
+                        </div>
+                    </div>
+                </template>
+                <template lwc:elseif={isNetWorthMetric}>
+                    <div class="avg-block">
+                        <span class="hud-sub-label">PERIOD CHANGE</span>
+                        <div class={netWorthDeltaClass}>{displayNetWorthDelta}</div>
+                    </div>
+                </template>
+                <template lwc:else>
+                    <div class="fin-right-stack">
+                        <div class="mini-stat">
+                            <span class="mini-label">INCOME</span>
+                            <span class="fin-income-val">{displayFinIncome}</span>
+                        </div>
+                        <div class="mini-stat">
+                            <span class="mini-label">EXPENSES</span>
+                            <span class="fin-expense-val">{displayFinExpenses}</span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Chart.js Canvas -->
+            <canvas class="main-canvas" lwc:dom="manual"></canvas>
+        </div>
+    </div>
+</template>
