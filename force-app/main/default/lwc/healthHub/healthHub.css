@@ -24,15 +24,14 @@
     color: #ffffff;
 }
 
-/* --- TOP HEADER & STATUS BADGE --- */
+/* --- TOP HEADER & STATUS BADGE (LOCKED 1:1 WITH GOAL PROJECTION) --- */
 .card-header {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
-    margin-bottom: 4px;
     position: relative;
-    z-index: 2;
+    z-index: 5;
 }
 
 .header-title-btn {
@@ -65,7 +64,7 @@
 
 .header-active {
     color: #ffffff;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .status-badge {
@@ -107,31 +106,44 @@
     background: rgba(255, 68, 68, 0.08);
 }
 
+/* --- CARD-CENTERED ARROWS (MATCHES GOAL PROJECTION PIXEL-FOR-PIXEL) --- */
+.nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: rgba(139, 148, 158, 0.4);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 8px;
+    z-index: 10;
+    transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.left-arrow {
+    left: 4px;
+}
+
+.right-arrow {
+    right: 4px;
+}
+
+.nav-arrow:hover {
+    color: #84ff33;
+    text-shadow: 0 0 8px rgba(132, 255, 51, 0.4);
+}
+
 /* --- CAROUSEL STAGE --- */
 .carousel-stage {
     flex: 1 1 auto;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     position: relative;
     min-height: 0;
     min-width: 0;
-    gap: 2px;
-}
-
-.nav-arrow {
-    background: transparent;
-    border: none;
-    color: rgba(139, 148, 158, 0.45);
-    font-size: 14px;
-    cursor: pointer;
-    padding: 6px 3px;
-    transition: color 0.15s ease;
-    flex-shrink: 0;
-}
-
-.nav-arrow:hover {
-    color: #84ff33;
+    padding: 0 20px;
 }
 
 .slide-body {
@@ -149,26 +161,22 @@
 .carbs-bg { background-color: #2596be; }
 .fat-bg { background-color: #94a3b8; }
 
-.protein-stroke { stroke: #84ff33; }
-.carbs-stroke { stroke: #2596be; }
-.fat-stroke { stroke: #94a3b8; }
-
 .label-green { color: #84ff33; }
 .label-blue { color: #2596be; }
 .label-slate { color: #94a3b8; }
 .split-sep { color: #6e7681; }
 
 /* --- SUBTLE CASH-FLOW STYLE CHART MUTING (BRIGHTENS ON CARD HOVER) --- */
-.macro-ring,
+.hero-energy-svg,
 .horizontal-bar-svg,
-.bar-column-svg {
-    opacity: 0.58;
+.trends-bars-svg {
+    opacity: 0.65;
     transition: opacity 0.25s ease;
 }
 
-.health-card:hover .macro-ring,
+.health-card:hover .hero-energy-svg,
 .health-card:hover .horizontal-bar-svg,
-.health-card:hover .bar-column-svg {
+.health-card:hover .trends-bars-svg {
     opacity: 1;
 }
 
@@ -178,158 +186,231 @@
     border-radius: 999px;
     overflow: hidden;
     display: block;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
 }
 
-/* --- SLIDE 1: DAILY MACROS (CENTERED & BALANCED) --- */
-.slide-one-layout {
+/* --- SLIDE 1: GRADIENT HERO ENERGY RING --- */
+.slide-one-hero {
     display: flex;
     flex-direction: column;
+    align-items: center;
     justify-content: center;
     height: 100%;
     width: 100%;
-    min-width: 0;
-    padding: 0 2px;
-    gap: 14px;
+    padding-top: 8px;
+    gap: 2px;
 }
 
-.slide-one-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    width: 100%;
-    min-width: 0;
-}
-
-.ring-wrapper {
+.hero-ring-stage {
     position: relative;
-    width: 84px;
-    height: 84px;
-    flex-shrink: 0;
+    width: 196px;
+    height: 148px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.macro-ring {
+.hero-energy-svg {
     width: 100%;
     height: 100%;
-    transform: rotate(-90deg);
+    overflow: visible;
+    filter:
+        drop-shadow(0 6px 10px rgba(0, 0, 0, 0.8))
+        drop-shadow(0 3px 6px rgba(0, 0, 0, 0.65));
 }
 
-.ring-track {
-    fill: none;
-    stroke: rgba(255, 255, 255, 0.06);
-    stroke-width: 8;
-}
-
-.ring-segment {
-    fill: none;
-    stroke-width: 8;
-    stroke-linecap: butt;
-    cursor: pointer;
-    transition: stroke-width 0.15s ease, opacity 0.15s ease;
-}
-
-.ring-segment.is-highlighted,
-.ring-segment:hover {
-    stroke-width: 10;
-}
-
-.ring-center {
+.hero-ring-center {
     position: absolute;
+    top: 53%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     pointer-events: none;
+    width: 105px;
 }
 
-.ring-main-val {
-    font-size: 15px;
-    font-weight: 500;
-    line-height: 1.1;
-    color: #ffffff;
-    letter-spacing: -0.3px;
-}
-
-.ring-sub-val {
-    font-size: 6px;
-    font-weight: 500;
-    letter-spacing: 0.4px;
+.hero-ring-eyebrow {
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
     color: #8b949e;
-    margin-top: 2px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
 }
 
-.macro-mini-grid {
-    flex: 1 1 auto;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 5px;
-    min-width: 0;
+.hero-ring-value {
+    font-size: 27px;
+    font-weight: 600;
+    color: #ffffff;
+    line-height: 1.05;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.65);
 }
 
-.macro-mini-card {
-    background: rgba(11, 14, 17, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 6px;
-    padding: 6px 4px;
-    cursor: pointer;
-    min-width: 0;
-    transition: border-color 0.15s ease;
+.hero-ring-sub {
+    font-size: 7.5px;
+    font-weight: 600;
+    letter-spacing: 0.9px;
+    color: #8b949e;
+    margin-top: 3px;
+    text-transform: uppercase;
 }
 
-.macro-mini-card:hover {
-    border-color: rgba(255, 255, 255, 0.2);
-}
-
-.mini-card-top {
+.hero-legend-strip {
     display: flex;
     align-items: center;
-    gap: 3px;
-    margin-bottom: 3px;
+    justify-content: center;
+    gap: 10px;
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    color: #c9d1d9;
+}
+
+.legend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.legend-chip:hover {
+    color: #ffffff;
+}
+
+.energy-delta-pill {
+    font-family: monospace;
+    font-size: 7.5px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+
+.energy-delta-pill.optimal {
+    color: #84ff33;
+    background: rgba(132, 255, 51, 0.08);
+    border: 1px solid rgba(132, 255, 51, 0.25);
+}
+
+.energy-delta-pill.accent {
+    color: #2596be;
+    background: rgba(37, 150, 190, 0.1);
+    border: 1px solid rgba(37, 150, 190, 0.3);
+}
+
+.energy-delta-pill.neutral {
+    color: #8b949e;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* --- SLIDE 2: PRONOUNCED 3-CARD MACRO BREAKDOWN --- */
+.slide-two-macros {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    gap: 14px;
+}
+
+.macro-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+}
+
+.macro-card {
+    background: rgba(11, 14, 17, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    padding: 10px 8px 9px 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.macro-card:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+    transform: translateY(-1px);
+}
+
+.card-protein {
+    border-top: 2px solid rgba(132, 255, 51, 0.65);
+}
+
+.card-carbs {
+    border-top: 2px solid rgba(37, 150, 190, 0.7);
+}
+
+.card-fat {
+    border-top: 2px solid rgba(148, 163, 184, 0.65);
+}
+
+.macro-card-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 6px;
 }
 
 .macro-dot {
-    width: 4.5px;
-    height: 4.5px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
     display: inline-block;
     flex-shrink: 0;
 }
 
-.mini-macro-name {
-    font-size: 6.5px;
-    font-weight: 600;
-    letter-spacing: 0.2px;
+.macro-card-title {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1px;
     color: #8b949e;
-    white-space: nowrap;
+    text-transform: uppercase;
 }
 
-.mini-macro-grams {
-    font-size: 10.5px;
-    font-weight: 500;
+.macro-card-metric {
+    display: flex;
+    align-items: baseline;
+    gap: 1px;
+    margin-bottom: 4px;
+}
+
+.macro-actual {
+    font-size: 16px;
+    font-weight: 600;
     color: #ffffff;
-    white-space: nowrap;
+    line-height: 1.1;
 }
 
-.target-slash {
-    font-size: 7.5px;
+.macro-target {
+    font-size: 9px;
     font-weight: 400;
     color: #6e7681;
 }
 
-.delta-pill {
+.macro-delta-pill {
     font-size: 8px;
-    font-weight: 500;
-    margin-top: 2px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
 }
 
-.delta-pill.positive {
+.macro-delta-pill.positive {
     color: #84ff33;
 }
 
-.delta-pill.neutral {
+.macro-delta-pill.neutral {
     color: #8b949e;
 }
 
@@ -356,13 +437,12 @@
     letter-spacing: 0.6px;
 }
 
-/* --- SLIDE 2: 7-DAY MACRO TRENDS --- */
-.slide-two-layout {
+/* --- SLIDE 3: 7-DAY MACRO TRENDS --- */
+.slide-three-trends {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
-    padding: 0 4px;
     gap: 6px;
 }
 
@@ -426,55 +506,35 @@
     color: #8b949e;
 }
 
-.stacked-bars-container {
+.trends-chart-stage {
     flex: 1 1 auto;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    min-height: 82px;
-    padding: 2px 6px 0 6px;
-    gap: 10px;
-}
-
-.bar-item {
-    flex: 1 1 0;
-    height: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: flex-end;
-    cursor: pointer;
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    min-height: 82px;
 }
 
-.bar-item.is-dimmed {
-    opacity: 0.25;
-}
-
-.bar-item.is-selected {
-    transform: translateY(-2px);
-}
-
-.bar-item.is-selected .bar-column-svg {
-    box-shadow: 0 0 8px rgba(132, 255, 51, 0.4);
-    outline: 1px solid rgba(255, 255, 255, 0.45);
-}
-
-.bar-column-svg {
-    width: 14px;
-    flex: 1 1 auto;
-    min-height: 66px;
-    border-radius: 3px;
-    overflow: hidden;
+.trends-bars-svg {
+    width: 100%;
+    height: 74px;
     display: block;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.65));
+}
+
+.trends-day-labels {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-top: 3px;
 }
 
 .bar-day-label {
+    flex: 1 1 0;
+    text-align: center;
     font-size: 8px;
     font-weight: 500;
     color: #6e7681;
-    margin-top: 3px;
-    flex-shrink: 0;
+    cursor: pointer;
 }
 
 .bar-day-label.active-day {
@@ -482,13 +542,12 @@
     font-weight: 600;
 }
 
-/* --- SLIDE 3: BODY COMPOSITION (INTEGRATED VERTICAL BALANCE) --- */
-.slide-three-layout {
+/* --- SLIDE 4: BODY COMPOSITION --- */
+.slide-four-comp {
     display: flex;
     flex-direction: column;
     justify-content: center;
     height: 100%;
-    padding: 0 4px;
     gap: 12px;
 }
 

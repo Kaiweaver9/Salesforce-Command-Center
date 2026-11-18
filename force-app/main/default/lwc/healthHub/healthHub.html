@@ -1,6 +1,6 @@
 <template>
     <div class="health-card">
-        <!-- Persistent Top HUD Header -->
+        <!-- Persistent Top HUD Header (Symmetric with Goal Projection) -->
         <div class="card-header">
             <button class="header-title-btn" onclick={handleNavigateHealth} title="Open Full Health Intelligence Workspace">
                 <span class="header-root">HEALTH · </span>
@@ -9,94 +9,89 @@
             <span class={statusBadgeClass}>{clinicalStatus}</span>
         </div>
 
+        <!-- Card-Level Left / Right Arrows (Aligned 1:1 with Goal Projection) -->
+        <button class="nav-arrow left-arrow" onclick={handlePrevSlide} aria-label="Previous slide">❮</button>
+        <button class="nav-arrow right-arrow" onclick={handleNextSlide} aria-label="Next slide">❯</button>
+
         <!-- Carousel Stage -->
         <div class="carousel-stage">
-            <button class="nav-arrow left-arrow" onclick={handlePrevSlide} aria-label="Previous slide">❮</button>
-
             <div class="slide-body">
-                <!-- SLIDE 1: DAILY MACROS -->
+                <!-- SLIDE 1: DAILY ENERGY (GRADIENT HERO RADIAL RING) -->
                 <template lwc:if={isSlideOne}>
-                    <div class="slide-one-layout">
-                        <div class="slide-one-top">
-                            <!-- Interactive SVG Macro Ring -->
-                            <div class="ring-wrapper">
-                                <svg class="macro-ring" viewBox="0 0 120 120">
-                                    <circle class="ring-track" cx="60" cy="60" r="46"></circle>
-                                    <circle
-                                        class={proteinArcClass}
-                                        cx="60"
-                                        cy="60"
-                                        r="46"
-                                        stroke-dasharray={proteinDashArray}
-                                        stroke-dashoffset={proteinDashOffset}
-                                        data-macro="PROTEIN"
-                                        onmouseenter={handleMacroHover}
-                                        onmouseleave={handleMacroLeave}
-                                        onclick={handleMacroTap}>
-                                    </circle>
-                                    <circle
-                                        class={carbsArcClass}
-                                        cx="60"
-                                        cy="60"
-                                        r="46"
-                                        stroke-dasharray={carbsDashArray}
-                                        stroke-dashoffset={carbsDashOffset}
-                                        data-macro="CARBS"
-                                        onmouseenter={handleMacroHover}
-                                        onmouseleave={handleMacroLeave}
-                                        onclick={handleMacroTap}>
-                                    </circle>
-                                    <circle
-                                        class={fatArcClass}
-                                        cx="60"
-                                        cy="60"
-                                        r="46"
-                                        stroke-dasharray={fatDashArray}
-                                        stroke-dashoffset={fatDashOffset}
-                                        data-macro="FAT"
-                                        onmouseenter={handleMacroHover}
-                                        onmouseleave={handleMacroLeave}
-                                        onclick={handleMacroTap}>
-                                    </circle>
-                                </svg>
-                                <div class="ring-center">
-                                    <span class="ring-main-val">{ringCenterPrimary}</span>
-                                    <span class="ring-sub-val">{ringCenterSecondary}</span>
-                                </div>
-                            </div>
+                    <div class="slide-one-hero">
+                        <div class="hero-ring-stage" onmouseleave={handleMacroLeave}>
+                            <!-- Native Shadow-DOM-Proof Gradient SVG -->
+                            <svg class="hero-energy-svg" viewBox="0 0 200 155" lwc:dom="manual"></svg>
 
-                            <!-- 3 Macro Cards (Distinct Macro Delta Getters) -->
-                            <div class="macro-mini-grid">
-                                <div class="macro-mini-card" data-macro="PROTEIN" onmouseenter={handleMacroHover} onmouseleave={handleMacroLeave}>
-                                    <div class="mini-card-top">
-                                        <span class="macro-dot protein-bg"></span>
-                                        <span class="mini-macro-name">PROTEIN</span>
-                                    </div>
-                                    <div class="mini-macro-grams">{proteinGrams}<span class="target-slash">/{targetProteinGrams}g</span></div>
-                                    <div class={macroProteinDeltaClass}>{macroProteinDeltaLabel}</div>
-                                </div>
-
-                                <div class="macro-mini-card" data-macro="CARBS" onmouseenter={handleMacroHover} onmouseleave={handleMacroLeave}>
-                                    <div class="mini-card-top">
-                                        <span class="macro-dot carbs-bg"></span>
-                                        <span class="mini-macro-name">CARBS</span>
-                                    </div>
-                                    <div class="mini-macro-grams">{carbsGrams}<span class="target-slash">/{targetCarbsGrams}g</span></div>
-                                    <div class={macroCarbsDeltaClass}>{macroCarbsDeltaLabel}</div>
-                                </div>
-
-                                <div class="macro-mini-card" data-macro="FAT" onmouseenter={handleMacroHover} onmouseleave={handleMacroLeave}>
-                                    <div class="mini-card-top">
-                                        <span class="macro-dot fat-bg"></span>
-                                        <span class="mini-macro-name">FAT</span>
-                                    </div>
-                                    <div class="mini-macro-grams">{fatGrams}<span class="target-slash">/{targetFatGrams}g</span></div>
-                                    <div class={macroFatDeltaClass}>{macroFatDeltaLabel}</div>
-                                </div>
+                            <!-- Center Telemetry Readout -->
+                            <div class="hero-ring-center">
+                                <span class={heroRingEyebrowClass}>{ringCenterEyebrow}</span>
+                                <span class="hero-ring-value">{ringCenterPrimary}</span>
+                                <span class="hero-ring-sub">{ringCenterSecondary}</span>
                             </div>
                         </div>
 
-                        <!-- Balanced, High-Legibility Split Bar -->
+                        <!-- Interactive Legend & Calorie Delta Pill -->
+                        <div class="hero-legend-strip" onmouseleave={handleMacroLeave}>
+                            <span class="legend-chip" data-macro="PROTEIN" onmouseenter={handleMacroHover} onmouseleave={handleMacroLeave} onclick={handleMacroTap}>
+                                <span class="macro-dot protein-bg"></span>P {actualProteinPct}%
+                            </span>
+                            <span class="legend-chip" data-macro="CARBS" onmouseenter={handleMacroHover} onmouseleave={handleMacroLeave} onclick={handleMacroTap}>
+                                <span class="macro-dot carbs-bg"></span>C {actualCarbsPct}%
+                            </span>
+                            <span class="legend-chip" data-macro="FAT" onmouseenter={handleMacroHover} onmouseleave={handleMacroLeave} onclick={handleMacroTap}>
+                                <span class="macro-dot fat-bg"></span>F {actualFatPct}%
+                            </span>
+                            <span class={calorieDeltaBadgeClass}>{calorieDeltaLabel}</span>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- SLIDE 2: DAILY MACROS (SPACIOUS 3-CARD LAYOUT + GRADIENT SPLIT BAR) -->
+                <template lwc:if={isSlideTwo}>
+                    <div class="slide-two-macros">
+                        <div class="macro-cards-grid">
+                            <!-- Protein Card -->
+                            <div class="macro-card card-protein">
+                                <div class="macro-card-header">
+                                    <span class="macro-dot protein-bg"></span>
+                                    <span class="macro-card-title">PROTEIN</span>
+                                </div>
+                                <div class="macro-card-metric">
+                                    <span class="macro-actual">{proteinGrams}</span>
+                                    <span class="macro-target">/{targetProteinGrams}g</span>
+                                </div>
+                                <div class={macroProteinDeltaClass}>{macroProteinDeltaLabel}</div>
+                            </div>
+
+                            <!-- Carbs Card -->
+                            <div class="macro-card card-carbs">
+                                <div class="macro-card-header">
+                                    <span class="macro-dot carbs-bg"></span>
+                                    <span class="macro-card-title">CARBS</span>
+                                </div>
+                                <div class="macro-card-metric">
+                                    <span class="macro-actual">{carbsGrams}</span>
+                                    <span class="macro-target">/{targetCarbsGrams}g</span>
+                                </div>
+                                <div class={macroCarbsDeltaClass}>{macroCarbsDeltaLabel}</div>
+                            </div>
+
+                            <!-- Fat Card -->
+                            <div class="macro-card card-fat">
+                                <div class="macro-card-header">
+                                    <span class="macro-dot fat-bg"></span>
+                                    <span class="macro-card-title">FAT</span>
+                                </div>
+                                <div class="macro-card-metric">
+                                    <span class="macro-actual">{fatGrams}</span>
+                                    <span class="macro-target">/{targetFatGrams}g</span>
+                                </div>
+                                <div class={macroFatDeltaClass}>{macroFatDeltaLabel}</div>
+                            </div>
+                        </div>
+
+                        <!-- Full-Width Gradient Macro Split Comparison Bar -->
                         <div class="ratio-comparison">
                             <div class="ratio-labels">
                                 <span class="actual-split-group">
@@ -108,19 +103,14 @@
                                 </span>
                                 <span class="target-split-label">TARGET 30 · 45 · 25</span>
                             </div>
-                            <svg class="horizontal-bar-svg" viewBox="0 0 300 9" preserveAspectRatio="none">
-                                <rect x="0" y="0" width="300" height="9" rx="4.5" fill="#0b0e11"></rect>
-                                <rect x="0" y="0" width={svgProteinWidth} height="9" fill="#84ff33"></rect>
-                                <rect x={svgCarbsX} y="0" width={svgCarbsWidth} height="9" fill="#2596be"></rect>
-                                <rect x={svgFatX} y="0" width={svgFatWidth} height="9" fill="#94a3b8"></rect>
-                            </svg>
+                            <svg class="horizontal-bar-svg macro-split-svg" viewBox="0 0 300 9" preserveAspectRatio="none" lwc:dom="manual"></svg>
                         </div>
                     </div>
                 </template>
 
-                <!-- SLIDE 2: 7-DAY MACRO TRENDS -->
-                <template lwc:if={isSlideTwo}>
-                    <div class="slide-two-layout">
+                <!-- SLIDE 3: 7-DAY MACRO TRENDS (GRADIENT STACKED BARS) -->
+                <template lwc:if={isSlideThree}>
+                    <div class="slide-three-trends">
                         <div class="trends-top-block">
                             <div class="trends-period-label">{trendsHeaderLabel}</div>
 
@@ -143,31 +133,28 @@
                             </div>
                         </div>
 
-                        <div class="stacked-bars-container" onmouseleave={handleBarLeave}>
-                            <template for:each={sevenDayBars} for:item="bar">
-                                <div
-                                    key={bar.dateKey}
-                                    class={bar.wrapperClass}
-                                    data-index={bar.index}
-                                    onmouseenter={handleBarHover}
-                                    onclick={handleBarTap}>
-                                    <svg class="bar-column-svg" viewBox="0 0 14 100" preserveAspectRatio="none">
-                                        <rect x="0" y="0" width="14" height="100" rx="2" fill="#0b0e11"></rect>
-                                        <rect x="0" y="0" width="14" height={bar.carbsHeight} fill="#2596be"></rect>
-                                        <rect x="0" y={bar.fatY} width="14" height={bar.fatHeight} fill="#94a3b8"></rect>
-                                        <rect x="0" y={bar.proteinY} width="14" height={bar.proteinHeight} fill="#84ff33"></rect>
-                                    </svg>
-                                    <span class={bar.dayLabelClass}>{bar.dayLabel}</span>
-                                </div>
-                            </template>
+                        <!-- Native Shadow-DOM-Proof Gradient 7-Day Columns -->
+                        <div class="trends-chart-stage" onmouseleave={handleBarLeave}>
+                            <svg class="trends-bars-svg" viewBox="0 0 280 96" preserveAspectRatio="none" lwc:dom="manual"></svg>
+                            <div class="trends-day-labels">
+                                <template for:each={sevenDayBars} for:item="bar">
+                                    <span
+                                        key={bar.dateKey}
+                                        class={bar.dayLabelClass}
+                                        data-index={bar.index}
+                                        onmouseenter={handleBarHover}
+                                        onclick={handleBarTap}>
+                                        {bar.dayLabel}
+                                    </span>
+                                </template>
+                            </div>
                         </div>
                     </div>
                 </template>
 
-                <!-- SLIDE 3: BODY COMPOSITION -->
-                <template lwc:if={isSlideThree}>
-                    <div class="slide-three-layout">
-                        <!-- Color-Linked Lean vs Fat Split Bar + Muted Status Arrow -->
+                <!-- SLIDE 4: BODY COMPOSITION (GRADIENT LEAN/FAT BAR) -->
+                <template lwc:if={isSlideFour}>
+                    <div class="slide-four-comp">
                         <div class="comp-bar-section">
                             <div class="comp-overview-header">
                                 <span class="comp-callout">
@@ -182,14 +169,9 @@
                                     <span class="label-slate">FAT {bodyFatPct}%</span>
                                 </span>
                             </div>
-                            <svg class="horizontal-bar-svg" viewBox="0 0 300 8" preserveAspectRatio="none">
-                                <rect x="0" y="0" width="300" height="8" rx="4" fill="#0b0e11"></rect>
-                                <rect x="0" y="0" width={svgLeanWidth} height="8" fill="#84ff33"></rect>
-                                <rect x={svgLeanWidth} y="0" width={svgFatMassWidth} height="8" fill="#94a3b8"></rect>
-                            </svg>
+                            <svg class="horizontal-bar-svg comp-split-svg" viewBox="0 0 300 9" preserveAspectRatio="none" lwc:dom="manual"></svg>
                         </div>
 
-                        <!-- Side-by-Side Tissue Cards -->
                         <div class="tissue-grid">
                             <div class="tissue-card">
                                 <div class="tissue-title">LEAN MASS</div>
@@ -208,7 +190,6 @@
                             </div>
                         </div>
 
-                        <!-- Integrated Weight & Body Fat Strip -->
                         <div class="biomarker-strip">
                             <span>WEIGHT: <strong>{formattedCurrentWeight} LBS</strong></span>
                             <span>BODY FAT: <strong>{bodyFatPct}%</strong></span>
@@ -216,15 +197,14 @@
                     </div>
                 </template>
             </div>
-
-            <button class="nav-arrow right-arrow" onclick={handleNextSlide} aria-label="Next slide">❯</button>
         </div>
 
-        <!-- Pagination Dots -->
+        <!-- 4-Slide Pagination Dots -->
         <div class="carousel-dots">
             <span class={dot0Class} data-slide="0" onclick={handleDotClick}></span>
             <span class={dot1Class} data-slide="1" onclick={handleDotClick}></span>
             <span class={dot2Class} data-slide="2" onclick={handleDotClick}></span>
+            <span class={dot3Class} data-slide="3" onclick={handleDotClick}></span>
         </div>
 
         <!-- Persistent Bottom Telemetry Bar -->

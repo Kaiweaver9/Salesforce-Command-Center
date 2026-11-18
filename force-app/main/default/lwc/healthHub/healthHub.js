@@ -2,8 +2,11 @@ import { LightningElement, wire } from 'lwc';
 import getDashboardMetrics from '@salesforce/apex/DashboardController.getDashboardMetrics';
 import getHealthHistory from '@salesforce/apex/DashboardController.getHealthHistory';
 
-const RING_RADIUS = 46;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const RING_CX = 100;
+const RING_CY = 82;
+const HERO_RING_RADIUS = 62;
+const SEGMENT_GAP_DEG = 6;
 
 export default class HealthHub extends LightningElement {
     activeSlide = 0;
@@ -27,6 +30,7 @@ export default class HealthHub extends LightningElement {
 
     // Historical Health Logs
     healthHistory = [];
+    uid = Math.random().toString(36).substring(2, 8);
 
     getLocalTodayString() {
         const now = new Date();
@@ -47,6 +51,7 @@ export default class HealthHub extends LightningElement {
             this.currentPhase = (data.currentPhase || 'maintenance').toLowerCase();
             this.clinicalStatus = (data.clinicalStatus || this.deriveFallbackStatus()).toUpperCase();
             this.statusColor = (data.statusColor || this.clinicalStatus.toLowerCase()).toLowerCase();
+            this.scheduleActiveSlideRender();
         } else if (error) {
             console.error('healthHub wiredMetrics error:', error);
         }
@@ -57,8 +62,29 @@ export default class HealthHub extends LightningElement {
         if (data) {
             const todayStr = this.getLocalTodayString();
             this.healthHistory = data.filter(item => item.Entry_Date__c && item.Entry_Date__c <= todayStr);
+            this.scheduleActiveSlideRender();
         } else if (error) {
             console.error('healthHub wiredHistory error:', error);
+        }
+    }
+
+    renderedCallback() {
+        this.renderActiveSlideGraphics();
+    }
+
+    scheduleActiveSlideRender() {
+        Promise.resolve().then(() => this.renderActiveSlideGraphics());
+    }
+
+    renderActiveSlideGraphics() {
+        if (this.activeSlide === 0) {
+            this.renderHeroRingSvg();
+        } else if (this.activeSlide === 1) {
+            this.renderMacroSplitSvg();
+        } else if (this.activeSlide === 2) {
+            this.renderSevenDayTrendsSvg();
+        } else if (this.activeSlide === 3) {
+            this.renderCompSplitSvg();
         }
     }
 
@@ -80,10 +106,309 @@ export default class HealthHub extends LightningElement {
         return Math.abs(v) <= 0.6 ? 'OPTIMAL' : 'CAUTION';
     }
 
-    /* --- HEADER & NAVIGATION --- */
+    /* --- SHARED NATIVE SVG GRADIENT HELPERS (LWC SHADOW-DOM SAFE) --- */
+    clearSvg(svgEl) {
+        while (svgEl && svgEl.firstChild) {
+            svgEl.removeChild(svgEl.firstChild);
+        }
+    }
+
+    createLinearGradient(id, x1, y1, x2, y2, stops) {
+        const grad = document.createElementNS(SVG_NS, 'linearGradient');
+        grad.setAttribute('id', id);
+        grad.setAttribute('gradientUnits', 'userSpaceOnUse');
+        grad.setAttribute('x1', String(x1));
+        grad.setAttribute('y1', String(y1));
+        grad.setAttribute('x2', String(x2));
+        grad.setAttribute('y2', String(y2));
+        stops.forEach(s => {
+            const stop = document.createElementNS(SVG_NS, 'stop');
+            stop.setAttribute('offset', s.offset);
+            stop.setAttribute('stop-color', s.color);
+            grad.appendChild(stop);
+        });
+        return grad;
+    }
+
+    createSvgRect(x, y, width, height, fill, rx = 0) {
+        const rect = document.createElementNS(SVG_NS, 'rect');
+        rect.setAttribute('x', String(x));
+        rect.setAttribute('y', String(y));
+        rect.setAttribute('width', String(Math.max(0, width)));
+        rect.setAttribute('height', String(Math.max(0, height)));
+        if (rx > 0) rect.setAttribute('rx', String(rx));
+        rect.setAttribute('fill', fill);
+        return rect;
+    }
+
+    /* --- SLIDE 1: NATIVE GRADIENT HERO RING --- */
+    polarToCartesian(cx, cy, r, angleDeg) {
+        const rad = ((angleDeg - 90) * Math.PI) / 180.0;
+        return {
+            x: cx + r * Math.cos(rad),
+            y: cy + r * Math.sin(rad)
+        };
+    }
+
+    describeArc(cx, cy, r, startAngle, endAngle) {
+        const sweep = endAngle - startAngle;
+        if (sweep <= 0.5) return '';
+        const clampedEnd = sweep >= 359.5 ? startAngle + 359.5 : endAngle;
+        const start = this.polarToCartesian(cx, cy, r, startAngle);
+        const end = this.polarToCartesian(cx, cy, r, clampedEnd);
+        const largeArc = clampedEnd - startAngle <= 180 ? '0' : '1';
+        return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
+    }
+
+    renderHeroRingSvg() {
+        const svgEl = this.template.querySelector('svg.hero-energy-svg');
+        if (!svgEl) return;
+        this.clearSvg(svgEl);
+
+        const pGradId = `ring-p-grad-${this.uid}`;
+        const cGradId = `ring-c-grad-${this.uid}`;
+        const fGradId = `ring-f-grad-${this.uid}`;
+
+        const defs = document.createElementNS(SVG_NS, 'defs');
+        defs.appendChild(this.createLinearGradient(pGradId, 100, 16, 164, 82, [
+            { offset: '0%', color: '#3fb27f' },
+            { offset: '100%', color: '#84ff33' }
+        ]));
+        defs.appendChild(this.createLinearGradient(cGradId, 164, 82, 42, 128, [
+            { offset: '0%', color: '#2596be' },
+            { offset: '100%', color: '#164a5f' }
+        ]));
+        defs.appendChild(this.createLinearGradient(fGradId, 42, 128, 100, 16, [
+            { offset: '0%', color: '#64748b' },
+            { offset: '100%', color: '#cbd5e1' }
+        ]));
+        svgEl.appendChild(defs);
+
+        // Recessed Dark Track
+        const track = document.createElementNS(SVG_NS, 'circle');
+        track.setAttribute('cx', String(RING_CX));
+        track.setAttribute('cy', String(RING_CY));
+        track.setAttribute('r', String(HERO_RING_RADIUS));
+        track.setAttribute('fill', 'none');
+        track.setAttribute('stroke', '#0b0e11');
+        track.setAttribute('stroke-width', '10');
+        svgEl.appendChild(track);
+
+        const hasData = (this.proteinGrams + this.carbsGrams + this.fatGrams) > 0;
+        const pPct = hasData ? this.actualProteinPct : 30;
+        const cPct = hasData ? this.actualCarbsPct : 45;
+        const fPct = hasData ? this.actualFatPct : 25;
+
+        const pSweep = Math.max(0, (pPct / 100) * 360 - SEGMENT_GAP_DEG);
+        const cSweep = Math.max(0, (cPct / 100) * 360 - SEGMENT_GAP_DEG);
+        const fSweep = Math.max(0, (fPct / 100) * 360 - SEGMENT_GAP_DEG);
+
+        const pStart = SEGMENT_GAP_DEG / 2;
+        const pEnd = pStart + pSweep;
+        const cStart = pEnd + SEGMENT_GAP_DEG;
+        const cEnd = cStart + cSweep;
+        const fStart = cEnd + SEGMENT_GAP_DEG;
+        const fEnd = fStart + fSweep;
+
+        const segments = [
+            { macro: 'PROTEIN', start: pStart, end: pEnd, gradId: pGradId },
+            { macro: 'CARBS', start: cStart, end: cEnd, gradId: cGradId },
+            { macro: 'FAT', start: fStart, end: fEnd, gradId: fGradId }
+        ];
+
+        segments.forEach(seg => {
+            const pathD = this.describeArc(RING_CX, RING_CY, HERO_RING_RADIUS, seg.start, seg.end);
+            if (!pathD) return;
+
+            const isHighlighted = this.hoveredMacro === seg.macro;
+            const isDimmed = this.hoveredMacro && !isHighlighted;
+
+            const path = document.createElementNS(SVG_NS, 'path');
+            path.setAttribute('d', pathD);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', `url(#${seg.gradId})`);
+            path.setAttribute('stroke-width', isHighlighted ? '12.5' : '10');
+            path.setAttribute('stroke-linecap', 'round');
+            path.style.cursor = 'pointer';
+            path.style.opacity = isDimmed ? '0.25' : '1';
+            path.style.transition = 'stroke-width 0.2s ease, opacity 0.2s ease';
+
+            path.addEventListener('mouseenter', () => {
+                if (this.hoveredMacro !== seg.macro) {
+                    this.hoveredMacro = seg.macro;
+                    this.renderHeroRingSvg();
+                }
+            });
+            path.addEventListener('mouseleave', () => {
+                if (this.hoveredMacro !== null) {
+                    this.hoveredMacro = null;
+                    this.renderHeroRingSvg();
+                }
+            });
+            path.addEventListener('click', () => {
+                this.hoveredMacro = this.hoveredMacro === seg.macro ? null : seg.macro;
+                this.renderHeroRingSvg();
+            });
+
+            svgEl.appendChild(path);
+        });
+    }
+
+    /* --- SLIDE 2: NATIVE GRADIENT MACRO SPLIT BAR --- */
+    renderMacroSplitSvg() {
+        const svgEl = this.template.querySelector('svg.macro-split-svg');
+        if (!svgEl) return;
+        this.clearSvg(svgEl);
+
+        const pGradId = `bar-p-grad-${this.uid}`;
+        const cGradId = `bar-c-grad-${this.uid}`;
+        const fGradId = `bar-f-grad-${this.uid}`;
+
+        const hasData = (this.proteinGrams + this.carbsGrams + this.fatGrams) > 0;
+        const pPct = hasData ? this.actualProteinPct : 30;
+        const cPct = hasData ? this.actualCarbsPct : 45;
+
+        const pW = Math.round((pPct / 100) * 300);
+        const cX = pW;
+        const cW = Math.round((cPct / 100) * 300);
+        const fX = pW + cW;
+        const fW = Math.max(0, 300 - fX);
+
+        const defs = document.createElementNS(SVG_NS, 'defs');
+        defs.appendChild(this.createLinearGradient(pGradId, 0, 0, Math.max(1, pW), 0, [
+            { offset: '0%', color: '#3fb27f' },
+            { offset: '100%', color: '#84ff33' }
+        ]));
+        defs.appendChild(this.createLinearGradient(cGradId, cX, 0, Math.max(cX + 1, cX + cW), 0, [
+            { offset: '0%', color: '#164a5f' },
+            { offset: '100%', color: '#2596be' }
+        ]));
+        defs.appendChild(this.createLinearGradient(fGradId, fX, 0, 300, 0, [
+            { offset: '0%', color: '#64748b' },
+            { offset: '100%', color: '#cbd5e1' }
+        ]));
+        svgEl.appendChild(defs);
+
+        svgEl.appendChild(this.createSvgRect(0, 0, 300, 9, '#0b0e11', 4.5));
+        if (pW > 0) svgEl.appendChild(this.createSvgRect(0, 0, pW, 9, `url(#${pGradId})`));
+        if (cW > 0) svgEl.appendChild(this.createSvgRect(cX, 0, cW, 9, `url(#${cGradId})`));
+        if (fW > 0) svgEl.appendChild(this.createSvgRect(fX, 0, fW, 9, `url(#${fGradId})`));
+    }
+
+    /* --- SLIDE 3: NATIVE GRADIENT 7-DAY STACKED BARS --- */
+    renderSevenDayTrendsSvg() {
+        const svgEl = this.template.querySelector('svg.trends-bars-svg');
+        if (!svgEl) return;
+        this.clearSvg(svgEl);
+
+        const pGradId = `trend-p-grad-${this.uid}`;
+        const cGradId = `trend-c-grad-${this.uid}`;
+        const fGradId = `trend-f-grad-${this.uid}`;
+
+        const defs = document.createElementNS(SVG_NS, 'defs');
+        defs.appendChild(this.createLinearGradient(cGradId, 0, 0, 0, 50, [
+            { offset: '0%', color: '#2596be' },
+            { offset: '100%', color: '#164a5f' }
+        ]));
+        defs.appendChild(this.createLinearGradient(fGradId, 0, 35, 0, 75, [
+            { offset: '0%', color: '#cbd5e1' },
+            { offset: '100%', color: '#64748b' }
+        ]));
+        defs.appendChild(this.createLinearGradient(pGradId, 0, 60, 0, 96, [
+            { offset: '0%', color: '#84ff33' },
+            { offset: '100%', color: '#3fb27f' }
+        ]));
+        svgEl.appendChild(defs);
+
+        const bars = this.sevenDayBars;
+        if (!bars.length) return;
+
+        const slotWidth = 280 / bars.length;
+        const barWidth = 14;
+
+        bars.forEach((bar, idx) => {
+            const x = idx * slotWidth + (slotWidth - barWidth) / 2;
+            const isSelected = this.selectedBarIndex === idx;
+            const isDimmed = this.selectedBarIndex !== null && !isSelected;
+
+            const group = document.createElementNS(SVG_NS, 'g');
+            group.style.cursor = 'pointer';
+            group.style.opacity = isDimmed ? '0.25' : '1';
+            group.style.transition = 'opacity 0.15s ease';
+
+            const cH = (bar.carbsHeight / 100) * 96;
+            const fY = (bar.fatY / 100) * 96;
+            const fH = (bar.fatHeight / 100) * 96;
+            const pY = (bar.proteinY / 100) * 96;
+            const pH = (bar.proteinHeight / 100) * 96;
+
+            group.appendChild(this.createSvgRect(x, 0, barWidth, 96, '#0b0e11', 3));
+            if (cH > 0) group.appendChild(this.createSvgRect(x, 0, barWidth, cH, `url(#${cGradId})`));
+            if (fH > 0) group.appendChild(this.createSvgRect(x, fY, barWidth, fH, `url(#${fGradId})`));
+            if (pH > 0) group.appendChild(this.createSvgRect(x, pY, barWidth, pH, `url(#${pGradId})`));
+
+            if (isSelected) {
+                const highlight = document.createElementNS(SVG_NS, 'rect');
+                highlight.setAttribute('x', String(x - 0.5));
+                highlight.setAttribute('y', '0.5');
+                highlight.setAttribute('width', String(barWidth + 1));
+                highlight.setAttribute('height', '95');
+                highlight.setAttribute('rx', '3');
+                highlight.setAttribute('fill', 'none');
+                highlight.setAttribute('stroke', 'rgba(255, 255, 255, 0.55)');
+                highlight.setAttribute('stroke-width', '1');
+                group.appendChild(highlight);
+            }
+
+            group.addEventListener('mouseenter', () => {
+                if (this.selectedBarIndex !== idx) {
+                    this.selectedBarIndex = idx;
+                    this.renderSevenDayTrendsSvg();
+                }
+            });
+            group.addEventListener('click', () => {
+                this.selectedBarIndex = this.selectedBarIndex === idx ? null : idx;
+                this.renderSevenDayTrendsSvg();
+            });
+
+            svgEl.appendChild(group);
+        });
+    }
+
+    /* --- SLIDE 4: NATIVE GRADIENT BODY COMP SPLIT BAR --- */
+    renderCompSplitSvg() {
+        const svgEl = this.template.querySelector('svg.comp-split-svg');
+        if (!svgEl) return;
+        this.clearSvg(svgEl);
+
+        const leanGradId = `comp-lean-grad-${this.uid}`;
+        const fatGradId = `comp-fat-grad-${this.uid}`;
+
+        const leanPct = parseFloat(this.leanMassPct) || 85;
+        const leanW = Math.round((leanPct / 100) * 300);
+        const fatW = Math.max(0, 300 - leanW);
+
+        const defs = document.createElementNS(SVG_NS, 'defs');
+        defs.appendChild(this.createLinearGradient(leanGradId, 0, 0, Math.max(1, leanW), 0, [
+            { offset: '0%', color: '#3fb27f' },
+            { offset: '100%', color: '#84ff33' }
+        ]));
+        defs.appendChild(this.createLinearGradient(fatGradId, leanW, 0, 300, 0, [
+            { offset: '0%', color: '#64748b' },
+            { offset: '100%', color: '#cbd5e1' }
+        ]));
+        svgEl.appendChild(defs);
+
+        svgEl.appendChild(this.createSvgRect(0, 0, 300, 9, '#0b0e11', 4.5));
+        if (leanW > 0) svgEl.appendChild(this.createSvgRect(0, 0, leanW, 9, `url(#${leanGradId})`));
+        if (fatW > 0) svgEl.appendChild(this.createSvgRect(leanW, 0, fatW, 9, `url(#${fatGradId})`));
+    }
+
+    /* --- HEADER & 4-SLIDE NAVIGATION --- */
     get activeSlideTitle() {
-        if (this.activeSlide === 0) return 'DAILY MACROS';
-        if (this.activeSlide === 1) return 'MACRO TRENDS';
+        if (this.activeSlide === 0) return 'DAILY ENERGY';
+        if (this.activeSlide === 1) return 'DAILY MACROS';
+        if (this.activeSlide === 2) return 'MACRO TRENDS';
         return 'BODY COMP';
     }
 
@@ -103,6 +428,10 @@ export default class HealthHub extends LightningElement {
         return this.activeSlide === 2;
     }
 
+    get isSlideFour() {
+        return this.activeSlide === 3;
+    }
+
     get dot0Class() {
         return this.activeSlide === 0 ? 'dot active' : 'dot';
     }
@@ -115,22 +444,29 @@ export default class HealthHub extends LightningElement {
         return this.activeSlide === 2 ? 'dot active' : 'dot';
     }
 
+    get dot3Class() {
+        return this.activeSlide === 3 ? 'dot active' : 'dot';
+    }
+
     handlePrevSlide() {
         this.selectedBarIndex = null;
         this.hoveredMacro = null;
-        this.activeSlide = (this.activeSlide + 2) % 3;
+        this.activeSlide = (this.activeSlide + 3) % 4;
+        this.scheduleActiveSlideRender();
     }
 
     handleNextSlide() {
         this.selectedBarIndex = null;
         this.hoveredMacro = null;
-        this.activeSlide = (this.activeSlide + 1) % 3;
+        this.activeSlide = (this.activeSlide + 1) % 4;
+        this.scheduleActiveSlideRender();
     }
 
     handleDotClick(event) {
         this.selectedBarIndex = null;
         this.hoveredMacro = null;
         this.activeSlide = parseInt(event.currentTarget.dataset.slide, 10);
+        this.scheduleActiveSlideRender();
     }
 
     handleNavigateHealth() {
@@ -141,7 +477,7 @@ export default class HealthHub extends LightningElement {
         }));
     }
 
-    /* --- SLIDE 1: MACRO TARGETS (30P / 45C / 25F) & SVG SPLIT BAR --- */
+    /* --- SLIDE 1 & 2: MACRO TARGETS (30P / 45C / 25F) --- */
     get targetProteinGrams() {
         return Math.round((this.targetCalories * 0.30) / 4);
     }
@@ -174,31 +510,74 @@ export default class HealthHub extends LightningElement {
         return Math.max(0, 100 - this.actualProteinPct - this.actualCarbsPct);
     }
 
-    get svgProteinWidth() {
-        const pct = (this.proteinGrams === 0 && this.carbsGrams === 0 && this.fatGrams === 0) ? 30 : this.actualProteinPct;
-        return Math.round((pct / 100) * 300);
+    get calorieDiff() {
+        return this.caloriesConsumed - this.targetCalories;
     }
 
-    get svgCarbsX() {
-        return this.svgProteinWidth;
+    get calorieDeltaLabel() {
+        if (this.caloriesConsumed === 0) return `${this.targetCalories.toLocaleString()} LEFT`;
+        const absDiff = Math.abs(this.calorieDiff).toLocaleString();
+        return this.calorieDiff > 0 ? `+${absDiff} OVER` : `${absDiff} LEFT`;
     }
 
-    get svgCarbsWidth() {
-        const pct = (this.proteinGrams === 0 && this.carbsGrams === 0 && this.fatGrams === 0) ? 45 : this.actualCarbsPct;
-        return Math.round((pct / 100) * 300);
+    get calorieDeltaBadgeClass() {
+        if (this.caloriesConsumed === 0) return 'energy-delta-pill neutral';
+        return Math.abs(this.calorieDiff) <= 150 ? 'energy-delta-pill optimal' : 'energy-delta-pill accent';
     }
 
-    get svgFatX() {
-        return this.svgProteinWidth + this.svgCarbsWidth;
+    get ringCenterEyebrow() {
+        if (this.hoveredMacro === 'PROTEIN') return 'PROTEIN';
+        if (this.hoveredMacro === 'CARBS') return 'CARBS';
+        if (this.hoveredMacro === 'FAT') return 'FAT';
+        return 'CONSUMED';
     }
 
-    get svgFatWidth() {
-        return Math.max(0, 300 - this.svgFatX);
+    get heroRingEyebrowClass() {
+        if (this.hoveredMacro === 'PROTEIN') return 'hero-ring-eyebrow label-green';
+        if (this.hoveredMacro === 'CARBS') return 'hero-ring-eyebrow label-blue';
+        if (this.hoveredMacro === 'FAT') return 'hero-ring-eyebrow label-slate';
+        return 'hero-ring-eyebrow';
     }
 
+    get ringCenterPrimary() {
+        if (this.hoveredMacro === 'PROTEIN') return `${this.proteinGrams}g`;
+        if (this.hoveredMacro === 'CARBS') return `${this.carbsGrams}g`;
+        if (this.hoveredMacro === 'FAT') return `${this.fatGrams}g`;
+        return this.caloriesConsumed.toLocaleString();
+    }
+
+    get ringCenterSecondary() {
+        if (this.hoveredMacro === 'PROTEIN') return `TARGET ${this.targetProteinGrams}G · ${this.actualProteinPct}%`;
+        if (this.hoveredMacro === 'CARBS') return `TARGET ${this.targetCarbsGrams}G · ${this.actualCarbsPct}%`;
+        if (this.hoveredMacro === 'FAT') return `TARGET ${this.targetFatGrams}G · ${this.actualFatPct}%`;
+        return `/ ${this.targetCalories.toLocaleString()} KCAL`;
+    }
+
+    handleMacroHover(event) {
+        const macro = event.currentTarget.dataset.macro;
+        if (this.hoveredMacro !== macro) {
+            this.hoveredMacro = macro;
+            this.renderHeroRingSvg();
+        }
+    }
+
+    handleMacroLeave() {
+        if (this.hoveredMacro !== null) {
+            this.hoveredMacro = null;
+            this.renderHeroRingSvg();
+        }
+    }
+
+    handleMacroTap(event) {
+        const macro = event.currentTarget.dataset.macro;
+        this.hoveredMacro = this.hoveredMacro === macro ? null : macro;
+        this.renderHeroRingSvg();
+    }
+
+    // Slide 2: Distinct Macro Delta Getters
     formatMacroDelta(actual, target) {
         const diff = actual - target;
-        return diff >= 0 ? `+${diff}g` : `${diff}g`;
+        return diff >= 0 ? `+${diff}g vs target` : `${diff}g vs target`;
     }
 
     get macroProteinDeltaLabel() {
@@ -214,97 +593,18 @@ export default class HealthHub extends LightningElement {
     }
 
     get macroProteinDeltaClass() {
-        return this.proteinGrams >= this.targetProteinGrams ? 'delta-pill positive' : 'delta-pill neutral';
+        return this.proteinGrams >= this.targetProteinGrams ? 'macro-delta-pill positive' : 'macro-delta-pill neutral';
     }
 
     get macroCarbsDeltaClass() {
-        return Math.abs(this.carbsGrams - this.targetCarbsGrams) <= 20 ? 'delta-pill positive' : 'delta-pill neutral';
+        return Math.abs(this.carbsGrams - this.targetCarbsGrams) <= 20 ? 'macro-delta-pill positive' : 'macro-delta-pill neutral';
     }
 
     get macroFatDeltaClass() {
-        return Math.abs(this.fatGrams - this.targetFatGrams) <= 10 ? 'delta-pill positive' : 'delta-pill neutral';
+        return Math.abs(this.fatGrams - this.targetFatGrams) <= 10 ? 'macro-delta-pill positive' : 'macro-delta-pill neutral';
     }
 
-    // SVG Ring Segments
-    get proteinArcLength() {
-        const pct = (this.proteinGrams === 0 && this.carbsGrams === 0 && this.fatGrams === 0) ? 0.30 : (this.actualProteinPct / 100);
-        return Math.max(0, pct * RING_CIRCUMFERENCE - 3);
-    }
-
-    get carbsArcLength() {
-        const pct = (this.proteinGrams === 0 && this.carbsGrams === 0 && this.fatGrams === 0) ? 0.45 : (this.actualCarbsPct / 100);
-        return Math.max(0, pct * RING_CIRCUMFERENCE - 3);
-    }
-
-    get fatArcLength() {
-        const pct = (this.proteinGrams === 0 && this.carbsGrams === 0 && this.fatGrams === 0) ? 0.25 : (this.actualFatPct / 100);
-        return Math.max(0, pct * RING_CIRCUMFERENCE - 3);
-    }
-
-    get proteinDashArray() {
-        return `${this.proteinArcLength} ${RING_CIRCUMFERENCE}`;
-    }
-
-    get proteinDashOffset() {
-        return 0;
-    }
-
-    get carbsDashArray() {
-        return `${this.carbsArcLength} ${RING_CIRCUMFERENCE}`;
-    }
-
-    get carbsDashOffset() {
-        return -(this.proteinArcLength + 3);
-    }
-
-    get fatDashArray() {
-        return `${this.fatArcLength} ${RING_CIRCUMFERENCE}`;
-    }
-
-    get fatDashOffset() {
-        return -(this.proteinArcLength + this.carbsArcLength + 6);
-    }
-
-    get proteinArcClass() {
-        return `ring-segment protein-stroke ${this.hoveredMacro === 'PROTEIN' ? 'is-highlighted' : ''}`;
-    }
-
-    get carbsArcClass() {
-        return `ring-segment carbs-stroke ${this.hoveredMacro === 'CARBS' ? 'is-highlighted' : ''}`;
-    }
-
-    get fatArcClass() {
-        return `ring-segment fat-stroke ${this.hoveredMacro === 'FAT' ? 'is-highlighted' : ''}`;
-    }
-
-    get ringCenterPrimary() {
-        if (this.hoveredMacro === 'PROTEIN') return `${this.proteinGrams}g`;
-        if (this.hoveredMacro === 'CARBS') return `${this.carbsGrams}g`;
-        if (this.hoveredMacro === 'FAT') return `${this.fatGrams}g`;
-        return this.caloriesConsumed.toLocaleString();
-    }
-
-    get ringCenterSecondary() {
-        if (this.hoveredMacro === 'PROTEIN') return `OF ${this.targetProteinGrams}G · ${this.actualProteinPct}%`;
-        if (this.hoveredMacro === 'CARBS') return `OF ${this.targetCarbsGrams}G · ${this.actualCarbsPct}%`;
-        if (this.hoveredMacro === 'FAT') return `OF ${this.targetFatGrams}G · ${this.actualFatPct}%`;
-        return `/ ${this.targetCalories.toLocaleString()} KCAL`;
-    }
-
-    handleMacroHover(event) {
-        this.hoveredMacro = event.currentTarget.dataset.macro;
-    }
-
-    handleMacroLeave() {
-        this.hoveredMacro = null;
-    }
-
-    handleMacroTap(event) {
-        const macro = event.currentTarget.dataset.macro;
-        this.hoveredMacro = this.hoveredMacro === macro ? null : macro;
-    }
-
-    /* --- SLIDE 2: 7-DAY MACRO SPLITS --- */
+    /* --- SLIDE 3: 7-DAY MACRO SPLITS --- */
     get recentSevenMacroDays() {
         const valid = this.healthHistory.filter(h => (h.Protein_g__c || 0) + (h.Carbs_g__c || 0) + (h.Fat_g__c || 0) > 0);
         return valid.slice(Math.max(valid.length - 7, 0));
@@ -333,7 +633,6 @@ export default class HealthHub extends LightningElement {
             const fullDate = dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
 
             const isSelected = this.selectedBarIndex === idx;
-            const isDimmed = this.selectedBarIndex !== null && !isSelected;
 
             return {
                 index: idx,
@@ -351,7 +650,6 @@ export default class HealthHub extends LightningElement {
                 fatHeight,
                 proteinY,
                 proteinHeight,
-                wrapperClass: `bar-item ${isSelected ? 'is-selected' : ''} ${isDimmed ? 'is-dimmed' : ''}`,
                 dayLabelClass: isSelected ? 'bar-day-label active-day' : 'bar-day-label'
             };
         });
@@ -423,19 +721,27 @@ export default class HealthHub extends LightningElement {
     }
 
     handleBarHover(event) {
-        this.selectedBarIndex = parseInt(event.currentTarget.dataset.index, 10);
+        const idx = parseInt(event.currentTarget.dataset.index, 10);
+        if (this.selectedBarIndex !== idx) {
+            this.selectedBarIndex = idx;
+            this.renderSevenDayTrendsSvg();
+        }
     }
 
     handleBarLeave() {
-        this.selectedBarIndex = null;
+        if (this.selectedBarIndex !== null) {
+            this.selectedBarIndex = null;
+            this.renderSevenDayTrendsSvg();
+        }
     }
 
     handleBarTap(event) {
         const idx = parseInt(event.currentTarget.dataset.index, 10);
         this.selectedBarIndex = this.selectedBarIndex === idx ? null : idx;
+        this.renderSevenDayTrendsSvg();
     }
 
-    /* --- SLIDE 3: BODY COMPOSITION --- */
+    /* --- SLIDE 4: BODY COMPOSITION --- */
     get compLogs() {
         return this.healthHistory.filter(h => h.Weight_lbs__c != null && (h.Body_Fat__c != null || h.Lean_Body_Mass__c != null));
     }
@@ -488,15 +794,6 @@ export default class HealthHub extends LightningElement {
 
     get fatMassLbs() {
         return this.extractFatLbs(this.latestCompLog).toFixed(1);
-    }
-
-    get svgLeanWidth() {
-        const pct = parseFloat(this.leanMassPct) || 85;
-        return Math.round((pct / 100) * 300);
-    }
-
-    get svgFatMassWidth() {
-        return Math.max(0, 300 - this.svgLeanWidth);
     }
 
     get dailyLeanDiff() {

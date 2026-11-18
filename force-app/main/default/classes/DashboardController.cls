@@ -1,5 +1,13 @@
 public with sharing class DashboardController {
 
+    private static final Decimal EMA_BASE_ALPHA = 0.28;
+    private static final Decimal BULK_TARGET_VELOCITY = 0.20;
+    private static final Decimal VELOCITY_DEADBAND = 0.05;
+    private static final Integer INTAKE_BUFFER_WINDOW_DAYS = 5;
+    private static final Decimal INTAKE_DRIFT_GAIN = 0.25;
+    private static final Decimal MAX_INTAKE_CORRECTION = 175.0;
+    private static final Decimal MAX_TOTAL_OFFSET = 250.0;
+
     public class FinancialHistoryItem {
         @AuraEnabled public String entryDate;
         @AuraEnabled public Decimal amount;
@@ -9,6 +17,16 @@ public with sharing class DashboardController {
             this.entryDate = entryDate;
             this.amount = amount;
             this.type = type;
+        }
+    }
+
+    private class SmoothedWeightPoint {
+        public Date entryDate;
+        public Decimal smoothedWeight;
+
+        public SmoothedWeightPoint(Date entryDate, Decimal smoothedWeight) {
+            this.entryDate = entryDate;
+            this.smoothedWeight = smoothedWeight;
         }
     }
 
@@ -137,14 +155,36 @@ public with sharing class DashboardController {
             }
             metrics.put('financialProgress', financialProgress);
 
-            // 5. Biometrics, TDEE, Target Calories & Clinical Status
+            // 5A. Live Today Consumed Calories & Macros (Updates immediately when food syncs, even before weigh-in)
+            List<Health_Data__c> todayIntakeLogs = [
+                SELECT Calories__c, Protein_g__c, Carbs_g__c, Fat_g__c
+                FROM Health_Data__c
+                WHERE Entry_Date__c = TODAY
+                ORDER BY LastModifiedDate DESC
+                LIMIT 1
+            ];
+
+            if (!todayIntakeLogs.isEmpty()) {
+                Health_Data__c todayIntake = todayIntakeLogs[0];
+                metrics.put('caloriesConsumed', todayIntake.Calories__c != null ? todayIntake.Calories__c : 0);
+                metrics.put('proteinGrams', todayIntake.Protein_g__c != null ? todayIntake.Protein_g__c : 0);
+                metrics.put('carbsGrams', todayIntake.Carbs_g__c != null ? todayIntake.Carbs_g__c : 0);
+                metrics.put('fatGrams', todayIntake.Fat_g__c != null ? todayIntake.Fat_g__c : 0);
+            } else {
+                metrics.put('caloriesConsumed', 0);
+                metrics.put('proteinGrams', 0);
+                metrics.put('carbsGrams', 0);
+                metrics.put('fatGrams', 0);
+            }
+
+            // 5B. Biometrics, TDEE, Target Calories & Clinical Status
+            // Recalculates target calories ONLY when a weigh-in (Weight_lbs__c != null) is recorded
             Date lookbackThreshold = todayDate.addDays(-21);
             List<Health_Data__c> healthLogs = [
                 SELECT Weight_lbs__c, Calories__c, Entry_Date__c, Protein_g__c,
                        Carbs_g__c, Fat_g__c, TDEE__c, Body_Fat__c
                 FROM Health_Data__c
-                WHERE Calories__c != null
-                  AND Weight_lbs__c != null
+                WHERE Weight_lbs__c != null
                   AND Entry_Date__c >= :lookbackThreshold
                   AND Entry_Date__c <= TODAY
                 ORDER BY Entry_Date__c DESC
@@ -162,10 +202,6 @@ public with sharing class DashboardController {
                 Health_Data__c latestLog = healthLogs[0];
                 currentBodyWeight = latestLog.Weight_lbs__c;
                 metrics.put('currentBodyWeight', currentBodyWeight);
-                metrics.put('caloriesConsumed', latestLog.Calories__c);
-                metrics.put('proteinGrams', latestLog.Protein_g__c != null ? latestLog.Protein_g__c : 0);
-                metrics.put('carbsGrams', latestLog.Carbs_g__c != null ? latestLog.Carbs_g__c : 0);
-                metrics.put('fatGrams', latestLog.Fat_g__c != null ? latestLog.Fat_g__c : 0);
 
                 if (healthLogs.size() >= 2) {
                     Health_Data__c previousLog = healthLogs[1];
@@ -174,10 +210,19 @@ public with sharing class DashboardController {
                         : (latestLog.Weight_lbs__c > previousLog.Weight_lbs__c ? 'DECAY' : 'OPTIMAL');
                 }
 
-                Integer rollingTdee = latestLog.TDEE__c != null ? Math.round(latestLog.TDEE__c) : 2500;
+                // Resolve latest available rolling TDEE (falls back to most recent prior log if today's hasn't stamped yet)
+                Integer rollingTdee = 2500;
+                for (Health_Data__c log : healthLogs) {
+                    if (log.TDEE__c != null) {
+                        rollingTdee = Math.round(log.TDEE__c);
+                        break;
+                    }
+                }
                 metrics.put('rollingTdee', rollingTdee);
 
-                dailySlope = calculateWeightSlope(healthLogs);
+                // Smooth raw scale noise via EMA before computing linear regression slope
+                List<SmoothedWeightPoint> smoothedSeries = computeSmoothedWeights(healthLogs);
+                dailySlope = calculateSmoothedWeightSlope(smoothedSeries);
                 Decimal weeklyVelocity = (dailySlope * 7.0).setScale(2);
                 metrics.put('weeklyVelocity', weeklyVelocity);
 
@@ -225,17 +270,26 @@ public with sharing class DashboardController {
                         targetCalories = Math.round(calorieFloor + (currentWeek * weeklyStep));
                     }
                 } else if (currentPhase == 'bulking' || currentPhase == 'maintenance') {
-                    Decimal targetVelocity = (currentPhase == 'bulking') ? 0.2 : 0.0;
-                    Decimal velocityError = weeklyVelocity - targetVelocity;
-                    Decimal lambda = (currentPhase == 'bulking' && velocityError < 0) ? 1.0 : calculateLambda(healthLogs);
-                    Decimal steeringAdjustment = (velocityError * 500) * lambda;
+                    Decimal targetVelocity = (currentPhase == 'bulking') ? BULK_TARGET_VELOCITY : 0.0;
                     Decimal baseCalories = (currentPhase == 'bulking') ? rollingTdee + 100 : rollingTdee;
-                    targetCalories = Math.round(baseCalories - steeringAdjustment);
+                    Decimal lambda = calculateLambda(healthLogs);
+
+                    targetCalories = calculateControlledTargetCalories(
+                        baseCalories,
+                        weeklyVelocity,
+                        targetVelocity,
+                        lambda,
+                        healthLogs,
+                        todayDate
+                    );
 
                     if (currentPhase == 'bulking') {
                         if (weeklyVelocity > 1.25) {
                             clinicalStatus = 'CAUTION';
                             statusColor = 'caution';
+                        } else if (weeklyVelocity >= 0.16 && weeklyVelocity <= 0.25) {
+                            clinicalStatus = 'PERFECT';
+                            statusColor = 'optimal';
                         } else if (weeklyVelocity < 0.1) {
                             clinicalStatus = 'STALLED';
                             statusColor = 'stalled';
@@ -461,14 +515,15 @@ public with sharing class DashboardController {
         return stats;
     }
 
-    private static Decimal calculateWeightSlope(List<Health_Data__c> descendingLogs) {
-        if (descendingLogs == null || descendingLogs.size() < 2) {
-            return 0.0;
-        }
-        if (descendingLogs.size() == 2) {
-            Integer days = descendingLogs[1].Entry_Date__c.daysBetween(descendingLogs[0].Entry_Date__c);
-            Decimal span = (days <= 0) ? 1.0 : Decimal.valueOf(days);
-            return (descendingLogs[0].Weight_lbs__c - descendingLogs[1].Weight_lbs__c) / span;
+    /**
+     * Applies an Exponential Moving Average (EMA) low-pass filter across chronological
+     * weight logs to strip out transient water/glycogen spikes before regression.
+     * Scales alpha slightly upward when calendar gaps occur so multi-day skips don't lag.
+     */
+    private static List<SmoothedWeightPoint> computeSmoothedWeights(List<Health_Data__c> descendingLogs) {
+        List<SmoothedWeightPoint> smoothed = new List<SmoothedWeightPoint>();
+        if (descendingLogs == null || descendingLogs.isEmpty()) {
+            return smoothed;
         }
 
         List<Health_Data__c> chronoLogs = new List<Health_Data__c>();
@@ -476,16 +531,45 @@ public with sharing class DashboardController {
             chronoLogs.add(descendingLogs[i]);
         }
 
-        Integer count = chronoLogs.size();
+        Decimal currentEma = chronoLogs[0].Weight_lbs__c;
+        Date prevDate = chronoLogs[0].Entry_Date__c;
+        smoothed.add(new SmoothedWeightPoint(prevDate, currentEma));
+
+        for (Integer i = 1; i < chronoLogs.size(); i++) {
+            Health_Data__c log = chronoLogs[i];
+            Integer dayGap = Math.max(1, prevDate.daysBetween(log.Entry_Date__c));
+            Decimal effectiveAlpha = Math.min(0.65, EMA_BASE_ALPHA * Decimal.valueOf(Math.min(dayGap, 3)));
+            currentEma = (effectiveAlpha * log.Weight_lbs__c) + ((1.0 - effectiveAlpha) * currentEma);
+            smoothed.add(new SmoothedWeightPoint(log.Entry_Date__c, currentEma));
+            prevDate = log.Entry_Date__c;
+        }
+
+        return smoothed;
+    }
+
+    /**
+     * Computes OLS linear regression slope (lbs/day) across EMA-smoothed weight points.
+     */
+    private static Decimal calculateSmoothedWeightSlope(List<SmoothedWeightPoint> smoothedPoints) {
+        if (smoothedPoints == null || smoothedPoints.size() < 2) {
+            return 0.0;
+        }
+        if (smoothedPoints.size() == 2) {
+            Integer days = smoothedPoints[0].entryDate.daysBetween(smoothedPoints[1].entryDate);
+            Decimal span = (days <= 0) ? 1.0 : Decimal.valueOf(days);
+            return (smoothedPoints[1].smoothedWeight - smoothedPoints[0].smoothedWeight) / span;
+        }
+
+        Integer count = smoothedPoints.size();
         Decimal sumX = 0;
         Decimal sumY = 0;
         Decimal sumXY = 0;
         Decimal sumX2 = 0;
-        Date firstDate = chronoLogs[0].Entry_Date__c;
+        Date firstDate = smoothedPoints[0].entryDate;
 
-        for (Health_Data__c log : chronoLogs) {
-            Decimal x = firstDate.daysBetween(log.Entry_Date__c);
-            Decimal y = log.Weight_lbs__c;
+        for (SmoothedWeightPoint pt : smoothedPoints) {
+            Decimal x = firstDate.daysBetween(pt.entryDate);
+            Decimal y = pt.smoothedWeight;
             sumX += x;
             sumY += y;
             sumXY += (x * y);
@@ -494,6 +578,62 @@ public with sharing class DashboardController {
 
         Decimal divisor = (count * sumX2) - (sumX * sumX);
         return divisor == 0 ? 0.0 : ((count * sumXY) - (sumX * sumY)) / divisor;
+    }
+
+    /**
+     * Computes stabilized target calories for bulking/maintenance using:
+     * 1. Deadband + smooth proportional velocity steering (with symmetric lambda)
+     * 2. Short-term 5-day rolling intake drift buffer (ignores empty/unlogged today rows)
+     * 3. Hard slew/offset guardrail around baseCalories to prevent waves
+     */
+    private static Integer calculateControlledTargetCalories(
+        Decimal baseCalories,
+        Decimal weeklyVelocity,
+        Decimal targetVelocity,
+        Decimal lambda,
+        List<Health_Data__c> descendingLogs,
+        Date todayDate
+    ) {
+        // Layer 1: Deadband + Smooth Proportional Velocity Steering
+        Decimal rawError = weeklyVelocity - targetVelocity;
+        Decimal velocitySteering = 0.0;
+
+        if (rawError.abs() > VELOCITY_DEADBAND) {
+            Decimal excessError = rawError.abs() - VELOCITY_DEADBAND;
+            Decimal gainFactor = Math.min(450.0, 220.0 + (excessError * 300.0));
+            Decimal signedMagnitude = excessError * gainFactor * lambda;
+            velocitySteering = (rawError > 0) ? signedMagnitude : -signedMagnitude;
+        }
+
+        // Layer 2: Short-Term Rolling Intake Drift Buffer (Only completed days with Calories__c > 0)
+        Date intakeCutoff = todayDate.addDays(-INTAKE_BUFFER_WINDOW_DAYS);
+        Decimal recentCalorieSum = 0.0;
+        Integer recentLogCount = 0;
+
+        for (Health_Data__c log : descendingLogs) {
+            if (log.Entry_Date__c >= intakeCutoff && log.Calories__c != null && log.Calories__c > 0) {
+                recentCalorieSum += log.Calories__c;
+                recentLogCount++;
+            }
+        }
+
+        Decimal intakeBufferAdjustment = 0.0;
+        if (recentLogCount >= 2) {
+            Decimal recentAvgIntake = recentCalorieSum / Decimal.valueOf(recentLogCount);
+            Decimal dailyIntakeDrift = recentAvgIntake - baseCalories;
+            if (dailyIntakeDrift.abs() > 150.0) {
+                Decimal excessIntake = dailyIntakeDrift.abs() - 150.0;
+                Decimal rawBuffer = excessIntake * INTAKE_DRIFT_GAIN;
+                Decimal clampedBuffer = Math.min(MAX_INTAKE_CORRECTION, rawBuffer);
+                intakeBufferAdjustment = (dailyIntakeDrift > 0) ? clampedBuffer : -clampedBuffer;
+            }
+        }
+
+        // Layer 3: Slew / Total Offset Guardrail around Base Calories
+        Decimal totalAdjustment = velocitySteering + intakeBufferAdjustment;
+        Decimal boundedAdjustment = Math.max(-MAX_TOTAL_OFFSET, Math.min(MAX_TOTAL_OFFSET, totalAdjustment));
+
+        return Math.round(baseCalories - boundedAdjustment);
     }
 
     private static Decimal calculateLambda(List<Health_Data__c> logs) {
