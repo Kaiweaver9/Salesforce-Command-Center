@@ -1,6 +1,6 @@
 public with sharing class DashboardController {
 
-    private static final Decimal EMA_BASE_ALPHA = 0.28;
+    private static final Decimal EMA_BASE_ALPHA = 0.38;
     private static final Decimal BULK_TARGET_VELOCITY = 0.20;
     private static final Decimal VELOCITY_DEADBAND = 0.05;
     private static final Integer INTAKE_BUFFER_WINDOW_DAYS = 5;
@@ -17,6 +17,26 @@ public with sharing class DashboardController {
             this.entryDate = entryDate;
             this.amount = amount;
             this.type = type;
+        }
+    }
+
+    public class QueuedGoalOption {
+        @AuraEnabled public String id;
+        @AuraEnabled public String name;
+        @AuraEnabled public String goalType;
+        @AuraEnabled public String currentPhase;
+        @AuraEnabled public Decimal goalTarget;
+        @AuraEnabled public Integer phaseDurationDays;
+
+        public QueuedGoalOption(Goal_Setting__c goal) {
+            this.id = goal.Id;
+            this.name = goal.Name;
+            this.goalType = goal.Goal_Type__c;
+            this.currentPhase = goal.Current_Phase__c;
+            this.goalTarget = goal.Goal_Target__c;
+            this.phaseDurationDays = goal.Phase_Duration_Days__c != null
+                ? Integer.valueOf(goal.Phase_Duration_Days__c)
+                : null;
         }
     }
 
@@ -94,6 +114,7 @@ public with sharing class DashboardController {
             ];
 
             Id financialGoalId = null;
+            Id healthGoalId = null;
             Decimal financialTarget = 0.00;
             Decimal healthTarget = 0.0;
             Decimal healthStart = 0.0;
@@ -104,14 +125,17 @@ public with sharing class DashboardController {
                 if (goal.Goal_Type__c == 'Financial') {
                     financialGoalId = goal.Id;
                     financialTarget = goal.Goal_Target__c != null ? goal.Goal_Target__c : 7000.00;
+                    metrics.put('financialGoalId', financialGoalId);
                     metrics.put('financialGoalLabel', goal.Name.toUpperCase());
                     metrics.put('financialTarget', financialTarget);
                 } else if (goal.Goal_Type__c == 'Health') {
                     activeHealthGoal = goal;
+                    healthGoalId = goal.Id;
                     healthTarget = goal.Goal_Target__c != null ? goal.Goal_Target__c : 0.0;
                     healthStart = goal.Goal_Start__c != null ? goal.Goal_Start__c : 0.0;
                     currentPhase = goal.Current_Phase__c != null ? goal.Current_Phase__c.toLowerCase() : 'maintenance';
 
+                    metrics.put('healthGoalId', healthGoalId);
                     metrics.put('healthGoalLabel', goal.Name.toUpperCase());
                     metrics.put('healthTarget', healthTarget);
                     metrics.put('healthStart', healthStart);
@@ -119,12 +143,32 @@ public with sharing class DashboardController {
                 }
             }
 
+            // Pre-Queued Inactive Goals (for 1-click transition inside completion modal)
+            List<QueuedGoalOption> queuedGoals = new List<QueuedGoalOption>();
+            for (Goal_Setting__c queued : [
+                SELECT Id, Name, Goal_Type__c, Current_Phase__c, Goal_Target__c, Phase_Duration_Days__c
+                FROM Goal_Setting__c
+                WHERE Display_on_Command_Center__c = false
+                  AND Target_Reached_Date__c = null
+                ORDER BY CreatedDate DESC
+                LIMIT 25
+            ]) {
+                queuedGoals.add(new QueuedGoalOption(queued));
+            }
+            metrics.put('queuedGoals', queuedGoals);
+
             // Phase Week Tracking (1-indexed week + total weeks only when Phase_Duration_Days__c is explicitly set)
             Integer currentPhaseWeek = null;
             Integer totalPhaseWeeks = null;
             Boolean hasExplicitDuration = (activeHealthGoal != null
                 && activeHealthGoal.Phase_Duration_Days__c != null
                 && activeHealthGoal.Phase_Duration_Days__c > 0);
+            Integer explicitDurationDays = hasExplicitDuration
+                ? Integer.valueOf(activeHealthGoal.Phase_Duration_Days__c)
+                : null;
+
+            metrics.put('phaseDurationDays', explicitDurationDays);
+            metrics.put('healthGoalMode', (hasExplicitDuration && currentPhase != 'bulking') ? 'TIMED_PHASE' : 'WEIGHT_TARGET');
 
             if (activeHealthGoal != null) {
                 Date phaseAnchorDate = (currentPhase == 'reverse' && activeHealthGoal.Target_Reached_Date__c != null)
@@ -132,7 +176,7 @@ public with sharing class DashboardController {
                     : activeHealthGoal.Goal_Start_Date__c;
 
                 Integer durationDays = hasExplicitDuration
-                    ? Integer.valueOf(activeHealthGoal.Phase_Duration_Days__c)
+                    ? explicitDurationDays
                     : (currentPhase == 'reverse' ? 21 : null);
 
                 if (durationDays != null) {
@@ -155,7 +199,7 @@ public with sharing class DashboardController {
             }
             metrics.put('financialProgress', financialProgress);
 
-            // 5A. Live Today Consumed Calories & Macros (Updates immediately when food syncs, even before weigh-in)
+            // 5A. Live Today Consumed Calories & Macros (resets to 0 at midnight until today's food logs sync)
             List<Health_Data__c> todayIntakeLogs = [
                 SELECT Calories__c, Protein_g__c, Carbs_g__c, Fat_g__c
                 FROM Health_Data__c
@@ -178,17 +222,18 @@ public with sharing class DashboardController {
             }
 
             // 5B. Biometrics, TDEE, Target Calories & Clinical Status
-            // Recalculates target calories ONLY when a weigh-in (Weight_lbs__c != null) is recorded
-            Date lookbackThreshold = todayDate.addDays(-21);
-            List<Health_Data__c> healthLogs = [
+            // Pulls buffer of recent weigh-ins, then slices strictly to 14 days anchored to the LATEST WEIGH-IN DATE
+            // so targetCalories and weeklyVelocity stay locked across midnight until a new weigh-in occurs.
+            Date queryBufferStart = todayDate.addDays(-21);
+            List<Health_Data__c> rawWeighIns = [
                 SELECT Weight_lbs__c, Calories__c, Entry_Date__c, Protein_g__c,
                        Carbs_g__c, Fat_g__c, TDEE__c, Body_Fat__c
                 FROM Health_Data__c
                 WHERE Weight_lbs__c != null
-                  AND Entry_Date__c >= :lookbackThreshold
+                  AND Entry_Date__c >= :queryBufferStart
                   AND Entry_Date__c <= TODAY
                 ORDER BY Entry_Date__c DESC
-                LIMIT 15
+                LIMIT 21
             ];
 
             Decimal currentBodyWeight = 0.0;
@@ -197,9 +242,19 @@ public with sharing class DashboardController {
             Decimal dailySlope = 0.0;
             String clinicalStatus = 'OPTIMAL';
             String statusColor = 'optimal';
+            List<Health_Data__c> healthLogs = new List<Health_Data__c>();
 
-            if (!healthLogs.isEmpty()) {
-                Health_Data__c latestLog = healthLogs[0];
+            if (!rawWeighIns.isEmpty()) {
+                Health_Data__c latestLog = rawWeighIns[0];
+                Date anchorWeighInDate = latestLog.Entry_Date__c;
+                Date fourteenDayCutoff = anchorWeighInDate.addDays(-14);
+
+                for (Health_Data__c log : rawWeighIns) {
+                    if (log.Entry_Date__c >= fourteenDayCutoff && healthLogs.size() < 15) {
+                        healthLogs.add(log);
+                    }
+                }
+
                 currentBodyWeight = latestLog.Weight_lbs__c;
                 metrics.put('currentBodyWeight', currentBodyWeight);
 
@@ -210,7 +265,6 @@ public with sharing class DashboardController {
                         : (latestLog.Weight_lbs__c > previousLog.Weight_lbs__c ? 'DECAY' : 'OPTIMAL');
                 }
 
-                // Resolve latest available rolling TDEE (falls back to most recent prior log if today's hasn't stamped yet)
                 Integer rollingTdee = 2500;
                 for (Health_Data__c log : healthLogs) {
                     if (log.TDEE__c != null) {
@@ -220,7 +274,6 @@ public with sharing class DashboardController {
                 }
                 metrics.put('rollingTdee', rollingTdee);
 
-                // Smooth raw scale noise via EMA before computing linear regression slope
                 List<SmoothedWeightPoint> smoothedSeries = computeSmoothedWeights(healthLogs);
                 dailySlope = calculateSmoothedWeightSlope(smoothedSeries);
                 Decimal weeklyVelocity = (dailySlope * 7.0).setScale(2);
@@ -254,9 +307,7 @@ public with sharing class DashboardController {
                         ? activeHealthGoal.Target_Reached_Date__c
                         : activeHealthGoal.Goal_Start_Date__c;
                     Integer daysElapsed = anchorDate != null ? Math.max(0, anchorDate.daysBetween(todayDate)) : 0;
-                    Integer durationDays = hasExplicitDuration
-                        ? Integer.valueOf(activeHealthGoal.Phase_Duration_Days__c)
-                        : 21;
+                    Integer durationDays = hasExplicitDuration ? explicitDurationDays : 21;
 
                     Decimal calorieFloor = rollingTdee * 0.85;
                     Decimal calorieSpread = rollingTdee - calorieFloor;
@@ -280,7 +331,7 @@ public with sharing class DashboardController {
                         targetVelocity,
                         lambda,
                         healthLogs,
-                        todayDate
+                        anchorWeighInDate
                     );
 
                     if (currentPhase == 'bulking') {
@@ -317,7 +368,7 @@ public with sharing class DashboardController {
                 if (activeHealthGoal.Target_End_Date__c != null) {
                     resolvedEndDate = activeHealthGoal.Target_End_Date__c;
                 } else if (activeHealthGoal.Goal_Start_Date__c != null) {
-                    resolvedEndDate = activeHealthGoal.Goal_Start_Date__c.addDays(Integer.valueOf(activeHealthGoal.Phase_Duration_Days__c));
+                    resolvedEndDate = activeHealthGoal.Goal_Start_Date__c.addDays(explicitDurationDays);
                 }
             }
 
@@ -344,7 +395,21 @@ public with sharing class DashboardController {
                     }
                 }
 
-                if (!healthLogs.isEmpty() && healthTarget > 0 && currentBodyWeight != healthTarget && dailySlope != 0) {
+                Boolean targetReached = false;
+                if (currentBodyWeight > 0 && healthTarget > 0) {
+                    if ((currentPhase == 'bulking' || currentPhase == 'reverse') && currentBodyWeight >= healthTarget) {
+                        targetReached = true;
+                    } else if ((currentPhase == 'cutting' || currentPhase == 'mini-cut' || currentPhase == 'minicut') && currentBodyWeight <= healthTarget) {
+                        targetReached = true;
+                    } else if (currentBodyWeight == healthTarget) {
+                        targetReached = true;
+                    }
+                }
+
+                if (targetReached) {
+                    metrics.put('healthDaysRemaining', '0');
+                    metrics.put('healthProjectedDate', String.valueOf(todayDate));
+                } else if (!healthLogs.isEmpty() && healthTarget > 0 && dailySlope != 0) {
                     Boolean isValidDirection = (((currentPhase == 'cutting' || currentPhase == 'mini-cut' || currentPhase == 'minicut') && dailySlope < 0) ||
                                                 ((currentPhase == 'bulking' || currentPhase == 'reverse') && dailySlope > 0));
                     if (isValidDirection) {
@@ -416,6 +481,65 @@ public with sharing class DashboardController {
         }
 
         return metrics;
+    }
+
+    @AuraEnabled
+    public static void archiveDashboardGoal(Id goalId) {
+        if (goalId == null) {
+            return;
+        }
+        try {
+            Goal_Setting__c goalToArchive = new Goal_Setting__c(
+                Id = goalId,
+                Display_on_Command_Center__c = false,
+                Target_Reached_Date__c = Date.today()
+            );
+            update goalToArchive;
+        } catch (Exception ex) {
+            throw new AuraHandledException('Error archiving completed goal: ' + ex.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static void activateQueuedGoal(Id completedGoalId, Id nextGoalId) {
+        try {
+            List<Goal_Setting__c> updates = new List<Goal_Setting__c>();
+
+            if (completedGoalId != null) {
+                updates.add(new Goal_Setting__c(
+                    Id = completedGoalId,
+                    Display_on_Command_Center__c = false,
+                    Target_Reached_Date__c = Date.today()
+                ));
+            }
+
+            if (nextGoalId != null) {
+                List<Goal_Setting__c> nextRecords = [
+                    SELECT Id, Goal_Start_Date__c, Current_Phase__c
+                    FROM Goal_Setting__c
+                    WHERE Id = :nextGoalId
+                    LIMIT 1
+                ];
+                if (!nextRecords.isEmpty()) {
+                    Goal_Setting__c nextGoal = nextRecords[0];
+                    nextGoal.Display_on_Command_Center__c = true;
+                    nextGoal.Target_Reached_Date__c = null;
+                    if (nextGoal.Goal_Start_Date__c == null) {
+                        nextGoal.Goal_Start_Date__c = Date.today();
+                    }
+                    if (nextGoal.Current_Phase__c == 'Bulking') {
+                        nextGoal.Phase_Duration_Days__c = null;
+                    }
+                    updates.add(nextGoal);
+                }
+            }
+
+            if (!updates.isEmpty()) {
+                update updates;
+            }
+        } catch (Exception ex) {
+            throw new AuraHandledException('Error transitioning goal: ' + ex.getMessage());
+        }
     }
 
     @AuraEnabled(cacheable=true)
@@ -515,11 +639,6 @@ public with sharing class DashboardController {
         return stats;
     }
 
-    /**
-     * Applies an Exponential Moving Average (EMA) low-pass filter across chronological
-     * weight logs to strip out transient water/glycogen spikes before regression.
-     * Scales alpha slightly upward when calendar gaps occur so multi-day skips don't lag.
-     */
     private static List<SmoothedWeightPoint> computeSmoothedWeights(List<Health_Data__c> descendingLogs) {
         List<SmoothedWeightPoint> smoothed = new List<SmoothedWeightPoint>();
         if (descendingLogs == null || descendingLogs.isEmpty()) {
@@ -547,9 +666,6 @@ public with sharing class DashboardController {
         return smoothed;
     }
 
-    /**
-     * Computes OLS linear regression slope (lbs/day) across EMA-smoothed weight points.
-     */
     private static Decimal calculateSmoothedWeightSlope(List<SmoothedWeightPoint> smoothedPoints) {
         if (smoothedPoints == null || smoothedPoints.size() < 2) {
             return 0.0;
@@ -580,19 +696,13 @@ public with sharing class DashboardController {
         return divisor == 0 ? 0.0 : ((count * sumXY) - (sumX * sumY)) / divisor;
     }
 
-    /**
-     * Computes stabilized target calories for bulking/maintenance using:
-     * 1. Deadband + smooth proportional velocity steering (with symmetric lambda)
-     * 2. Short-term 5-day rolling intake drift buffer (ignores empty/unlogged today rows)
-     * 3. Hard slew/offset guardrail around baseCalories to prevent waves
-     */
     private static Integer calculateControlledTargetCalories(
         Decimal baseCalories,
         Decimal weeklyVelocity,
         Decimal targetVelocity,
         Decimal lambda,
         List<Health_Data__c> descendingLogs,
-        Date todayDate
+        Date anchorWeighInDate
     ) {
         // Layer 1: Deadband + Smooth Proportional Velocity Steering
         Decimal rawError = weeklyVelocity - targetVelocity;
@@ -605,8 +715,8 @@ public with sharing class DashboardController {
             velocitySteering = (rawError > 0) ? signedMagnitude : -signedMagnitude;
         }
 
-        // Layer 2: Short-Term Rolling Intake Drift Buffer (Only completed days with Calories__c > 0)
-        Date intakeCutoff = todayDate.addDays(-INTAKE_BUFFER_WINDOW_DAYS);
+        // Layer 2: Short-Term Rolling Intake Drift Buffer (Anchored to latest weigh-in date)
+        Date intakeCutoff = anchorWeighInDate.addDays(-INTAKE_BUFFER_WINDOW_DAYS);
         Decimal recentCalorieSum = 0.0;
         Integer recentLogCount = 0;
 
@@ -644,7 +754,7 @@ public with sharing class DashboardController {
                          - (logs[logs.size() - 1].Weight_lbs__c * (logs[logs.size() - 1].Body_Fat__c / 100.0));
         Decimal weightDelta = logs[0].Weight_lbs__c - logs[logs.size() - 1].Weight_lbs__c;
 
-        if (weightDelta == 0) {
+        if (weightDelta == 0 || fatDelta == 0) {
             return 0.5;
         }
         Decimal compositionRatio = (weightDelta > 0) ? (fatDelta / weightDelta) : (weightDelta / fatDelta);

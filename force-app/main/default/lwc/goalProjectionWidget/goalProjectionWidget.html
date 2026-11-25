@@ -1,12 +1,12 @@
 <template>
-    <div class="projection-card">
-      <!-- Header -->
+    <div class={cardClass}>
+        <!-- Header -->
         <div class="projection-header">
             <div class="goal-title">
                 <span class="goal-prefix">CURRENT GOAL:</span>
                 <span class="goal-name">{activeGoalLabel}</span>
             </div>
-            <span class="progress-badge">{displayProgress}%</span>
+            <span class={badgeClass}>{displayBadgeText}</span>
         </div>
 
         <!-- Left / Right Carousel Arrows -->
@@ -20,16 +20,24 @@
             <!-- Center Readout -->
             <div class="gauge-center-readout">
                 <div class={daysRemainingClass}>{displayDaysRemaining}</div>
-                <div class="days-sublabel">DAYS REMAINING</div>
+                <div class="days-sublabel">{daysSublabel}</div>
             </div>
         </div>
 
-        <!-- Footer Projection Date & Pagination Dots -->
+        <!-- Footer Projection Date / Set Goal CTA & Pagination Dots -->
         <div class="projection-footer">
-            <div class="projected-date-line">
-                <span class="projected-prefix">PROJECTED:</span>
-                <span class="projected-value">{displayProjectedDate}</span>
-            </div>
+            <template lwc:if={showSetGoalAction}>
+                <button class="victory-next-btn" onclick={handleSetNextGoal}>
+                    {setGoalButtonLabel}
+                </button>
+            </template>
+            <template lwc:else>
+                <div class="projected-date-line">
+                    <span class="projected-prefix">PROJECTED:</span>
+                    <span class="projected-value">{displayProjectedDate}</span>
+                </div>
+            </template>
+
             <div class="carousel-dots">
                 <span class={finDotClass} data-mode="FINANCIAL" onclick={handleSelectDot}></span>
                 <span class={healthDotClass} data-mode="HEALTH" onclick={handleSelectDot}></span>

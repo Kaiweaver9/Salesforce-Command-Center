@@ -1,0 +1,260 @@
+<template>
+    <c-base-card title="Daily Performance">
+        <div class="performance-card-shell">
+            <!-- Left & Right Card Side Arrows (Switch Between Execution Feed & Dual-Line Graph) -->
+            <button
+                type="button"
+                class="card-side-arrow side-arrow-left"
+                onclick={handleToggleSlide}
+                aria-label="Previous View">
+                ❮
+            </button>
+            <button
+                type="button"
+                class="card-side-arrow side-arrow-right"
+                onclick={handleToggleSlide}
+                aria-label="Next View">
+                ❯
+            </button>
+
+            <!-- Top Toolbar: Date Cycler on Left + Calendar Button on Right -->
+            <div class="card-toolbar">
+                <div class="date-nav-group">
+                    <button
+                        type="button"
+                        class="day-arrow-btn"
+                        data-step="-1"
+                        onclick={handleStepDay}
+                        title="Previous Day"
+                        aria-label="Previous Day">
+                        ❮
+                    </button>
+
+                    <button
+                        type="button"
+                        class={todayPillClass}
+                        onclick={handleResetToToday}
+                        title="Return to Today">
+                        TODAY
+                    </button>
+
+                    <button
+                        type="button"
+                        class="day-arrow-btn"
+                        data-step="1"
+                        onclick={handleStepDay}
+                        title="Next Day"
+                        aria-label="Next Day">
+                        ❯
+                    </button>
+                </div>
+
+                <div class="toolbar-actions">
+                    <button
+                        type="button"
+                        class="expand-calendar-btn"
+                        onclick={handleOpenFullCalendar}
+                        title="Open Full Calendar & Tasks">
+                        <span>CALENDAR</span>
+                        <span class="chevron-symbol">❯</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading / Error States -->
+            <template lwc:if={isDataLoading}>
+                <div class="state-container">
+                    <span class="state-text">SYNCING EXECUTION DATA...</span>
+                </div>
+            </template>
+
+            <template lwc:elseif={errorMessage}>
+                <div class="state-container">
+                    <span class="state-text error-text">{errorMessage}</span>
+                </div>
+            </template>
+
+            <!-- SLIDE 1: Task Feed (Iteration 1 Styling + Dynamic Day Cycling) -->
+            <template lwc:elseif={isSlideOne}>
+                <div class="slide-pane">
+                    <div class="today-summary-strip">
+                        <span class="today-date-label">{selectedDateFormattedLabel}</span>
+                        <span class="completion-pill">{completedCount} / {totalCount} DONE</span>
+                    </div>
+
+                    <template lwc:if={hasDisplayedTasks}>
+                        <div class="task-feed-list">
+                            <template for:each={displayedTasks} for:item="task">
+                                <div key={task.id} class={task.rowClass}>
+                                    <span class="category-accent-bar" style={task.accentStyle}></span>
+
+                                    <button
+                                        type="button"
+                                        class={task.checkboxClass}
+                                        data-id={task.id}
+                                        onclick={handleToggleTask}
+                                        aria-label="Toggle Task Completion">
+                                        <template lwc:if={task.isCompleted}>
+                                            <span class="checkmark-glyph">✓</span>
+                                        </template>
+                                    </button>
+
+                                    <div class="task-content-block">
+                                        <div class={task.subjectClass}>{task.subject}</div>
+                                        <div class="task-meta-row">
+                                            <button
+                                                type="button"
+                                                class="category-tag-btn"
+                                                style={task.badgeStyle}
+                                                data-id={task.id}
+                                                onclick={handleOpenEditor}
+                                                title="Click to change color or assign goal">
+                                                {task.categoryLabel}
+                                            </button>
+
+                                            <template lwc:if={task.goalName}>
+                                                <button
+                                                    type="button"
+                                                    class="goal-link-chip"
+                                                    data-id={task.id}
+                                                    onclick={handleOpenEditor}
+                                                    title="Reassign Goal">
+                                                    ◆ {task.goalName}
+                                                </button>
+                                            </template>
+                                            <template lwc:else>
+                                                <button
+                                                    type="button"
+                                                    class="goal-link-chip unlinked-chip"
+                                                    data-id={task.id}
+                                                    onclick={handleOpenEditor}>
+                                                    + Link Goal
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <template lwc:else>
+                        <div class="empty-feed-state">
+                            <p class="empty-title">{emptyStateTitle}</p>
+                            <p class="empty-subtitle">Open Calendar to view upcoming items or sync tasks.</p>
+                        </div>
+                    </template>
+
+                    <!-- Inline Reassign Goal / Color Popover -->
+                    <template lwc:if={isEditingTask}>
+                        <div class="inline-editor-overlay">
+                            <div class="editor-header">
+                                <span class="editor-title">ASSIGN GOAL & COLOR</span>
+                                <button type="button" class="editor-close-btn" onclick={handleCloseEditor}>✕</button>
+                            </div>
+                            <div class="editor-task-preview">{editingTaskSubject}</div>
+
+                            <div class="editor-field-group">
+                                <label class="editor-label">CATEGORY COLOR</label>
+                                <div class="color-swatch-row">
+                                    <template for:each={categoryOptions} for:item="cat">
+                                        <button
+                                            key={cat.value}
+                                            type="button"
+                                            class={cat.buttonClass}
+                                            data-category={cat.value}
+                                            onclick={handleSelectEditCategory}>
+                                            <span class="swatch-dot" style={cat.dotStyle}></span>
+                                            <span>{cat.label}</span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <div class="editor-field-group">
+                                <label class="editor-label" for="goal-select">LINKED GOAL</label>
+                                <select id="goal-select" class="dark-select" onchange={handleSelectEditGoal}>
+                                    <option value="">-- No Linked Goal --</option>
+                                    <template for:each={goalSelectOptions} for:item="goal">
+                                        <option key={goal.id} value={goal.id} selected={goal.isSelected}>
+                                            {goal.name}
+                                        </option>
+                                    </template>
+                                </select>
+                            </div>
+
+                            <div class="editor-footer">
+                                <button type="button" class="cancel-btn" onclick={handleCloseEditor}>Cancel</button>
+                                <button type="button" class="save-btn" onclick={handleSaveAssignment} disabled={isSaving}>
+                                    {saveButtonLabel}
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- SLIDE 2: Dual-Line Goal & Execution Trend (Accessed via Side Card Arrows) -->
+            <template lwc:else>
+                <div class="slide-pane trend-pane">
+                    <div class="trend-legend-row">
+                        <div class="legend-item">
+                            <span class="legend-dot goal-dot"></span>
+                            <span>GOAL EXECUTION ({latestGoalRate}%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot consistency-dot"></span>
+                            <span>DAILY RHYTHM ({latestDailyRate}%)</span>
+                        </div>
+                    </div>
+
+                    <div class="chart-stage" onmouseleave={handleChartLeave}>
+                        <svg viewBox="0 0 320 150" class="dual-line-svg" preserveAspectRatio="none">
+                            <line x1="16" y1="20" x2="304" y2="20" class="grid-line"></line>
+                            <line x1="16" y1="75" x2="304" y2="75" class="grid-line"></line>
+                            <line x1="16" y1="130" x2="304" y2="130" class="grid-line"></line>
+
+                            <polyline fill="none" points={dailyPolylinePoints} class="line-daily"></polyline>
+                            <polyline fill="none" points={goalPolylinePoints} class="line-goal"></polyline>
+
+                            <template for:each={trendPoints} for:item="pt">
+                                <g key={pt.dateKey}>
+                                    <circle cx={pt.x} cy={pt.dailyY} r="3.5" class="point-daily"></circle>
+                                    <circle cx={pt.x} cy={pt.goalY} r="4" class="point-goal"></circle>
+                                    <rect
+                                        x={pt.hitX}
+                                        y="0"
+                                        width={pt.hitWidth}
+                                        height="150"
+                                        class="hit-zone"
+                                        data-index={pt.index}
+                                        onmouseenter={handlePointHover}
+                                        onclick={handlePointHover}>
+                                    </rect>
+                                </g>
+                            </template>
+                        </svg>
+
+                        <template lwc:if={activeTooltip}>
+                            <div class="chart-tooltip" style={activeTooltip.style}>
+                                <div class="tooltip-date">{activeTooltip.label}</div>
+                                <div class="tooltip-row goal-text">
+                                    Goal Tasks: {activeTooltip.goalSummary}
+                                </div>
+                                <div class="tooltip-row daily-text">
+                                    All Tasks: {activeTooltip.dailySummary}
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="x-axis-row">
+                        <template for:each={trendPoints} for:item="pt">
+                            <span key={pt.dateKey} class="x-axis-label">{pt.dayShort}</span>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </c-base-card>
+</template>

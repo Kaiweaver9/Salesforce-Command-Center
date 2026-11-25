@@ -1,6 +1,9 @@
 import { LightningElement, track } from 'lwc';
+import COMMAND_CENTER_LOGO from '@salesforce/resourceUrl/CommandCenterLogo';
 
 export default class SidebarNav extends LightningElement {
+    logoUrl = COMMAND_CENTER_LOGO;
+
     @track currentDate = 'LOADING...';
     @track currentTime = 'LOADING...';
     @track activeIndicatorTop = 0;
@@ -23,19 +26,19 @@ export default class SidebarNav extends LightningElement {
         const now = new Date();
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        
+
         this.currentDate = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
-        
+
         let hours = now.getHours();
         let minutes = now.getMinutes();
         let seconds = now.getSeconds();
         const ampm = hours >= 12 ? 'PM' : 'AM';
-        
+
         hours = hours % 12;
         hours = hours ? hours : 12;
         minutes = minutes < 10 ? '0' + minutes : minutes;
         seconds = seconds < 10 ? '0' + seconds : seconds;
-        
+
         this.currentTime = `${hours}:${minutes}:${seconds} ${ampm}`;
     }
 
@@ -54,21 +57,21 @@ export default class SidebarNav extends LightningElement {
     get resourcesClass() { return this.getClass('resources'); }
     get projectsClass() { return this.getClass('projects'); }
     get themeClass() { return this.getClass('theme'); }
-    get settingsClass() { return this.getClass('settings'); }
 
     get sidebarContentClass() {
-        return this.isMobileMenuOpen 
-            ? 'sidebar-content nav-list-container mobile-drawer-open' 
+        return this.isMobileMenuOpen
+            ? 'sidebar-content nav-list-container mobile-drawer-open'
             : 'sidebar-content nav-list-container';
     }
 
-    // Smoothly morphs the 3 lines into an 'X' when open
     get hamburgerLine1Class() {
         return this.isMobileMenuOpen ? 'hamburger-line line-1-open' : 'hamburger-line';
     }
+
     get hamburgerLine2Class() {
         return this.isMobileMenuOpen ? 'hamburger-line line-2-open' : 'hamburger-line';
     }
+
     get hamburgerLine3Class() {
         return this.isMobileMenuOpen ? 'hamburger-line line-3-open' : 'hamburger-line';
     }
@@ -96,7 +99,7 @@ export default class SidebarNav extends LightningElement {
     handleNavClick(event) {
         const selectedId = event.currentTarget.dataset.id;
         this.activeNavItemId = selectedId;
-        
+
         if (this.isMobileMenuOpen) {
             this.isMobileMenuOpen = false;
         }

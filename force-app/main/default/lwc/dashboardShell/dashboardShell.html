@@ -21,15 +21,19 @@
                     <c-main-chart-hub is-privacy-mode={isPrivacyMode}></c-main-chart-hub>
                 </div>
 
-                <!-- Top Right: Daily Performance Widget -->
+                <!-- Top Right: Daily Performance & Execution Carousel -->
                 <div class="top-right-region">
-                    <c-base-card title="Daily Performance"></c-base-card>
+                    <c-daily-performance onnavigate={handleNavigate}></c-daily-performance>
                 </div>
 
                 <!-- Bottom Left & Center: Health & Goal Projections -->
                 <div class="bottom-metrics-region">
                     <c-health-hub></c-health-hub>
-                    <c-goal-projection-widget is-privacy-mode={isPrivacyMode}></c-goal-projection-widget>
+                    <c-goal-projection-widget 
+                        is-privacy-mode={isPrivacyMode}
+                        ongoalcompleted={handleGoalCompleted}
+                        onopensetgoal={handleOpenSetGoal}>
+                    </c-goal-projection-widget>
                 </div>
 
                 <!-- Bottom Right: Trailhead / Flexible Widget -->
@@ -49,6 +53,83 @@
                     </div>
                 </c-base-card>
             </main>
+        </template>
+
+        <!-- Polymorphic Goal Celebration / Phase-Completion Modal Overlay -->
+        <template lwc:if={isGoalModalOpen}>
+            <div class="goal-modal-backdrop" role="dialog" aria-modal="true">
+                <!-- Lightweight Confetti Layer (Target Reached Mode Only) -->
+                <template lwc:if={showConfetti}>
+                    <div class="confetti-layer" aria-hidden="true">
+                        <template for:each={confettiPieces} for:item="piece">
+                            <span key={piece.id} class="confetti-piece" style={piece.style}></span>
+                        </template>
+                    </div>
+                </template>
+
+                <div class={goalModalCardClass}>
+                    <div class="modal-top-row">
+                        <span class={modalBadgeClass}>{modalBadgeText}</span>
+                        <span class="modal-goal-chip">{activeModalGoalLabel}</span>
+                    </div>
+
+                    <h2 class="modal-headline">{modalHeadline}</h2>
+                    <p class="modal-subtext">{modalSubtext}</p>
+
+                    <div class="modal-divider"></div>
+
+                    <p class="modal-prompt-question">Would you like to set a new goal?</p>
+
+                    <!-- Optional 1-Click Queued Goal Selector -->
+                    <template lwc:if={hasQueuedGoals}>
+                        <div class="queued-goals-box">
+                            <div class="queued-box-label">READY IN QUEUE</div>
+                            <div class="queued-list">
+                                <template for:each={queuedGoalItems} for:item="item">
+                                    <button
+                                        key={item.id}
+                                        type="button"
+                                        class={item.itemClass}
+                                        data-id={item.id}
+                                        onclick={handleSelectQueuedGoal}>
+                                        <span class="queued-name">{item.name}</span>
+                                        <span class="queued-meta">{item.metaLabel}</span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Action Buttons -->
+                    <div class="modal-actions">
+                        <button
+                            type="button"
+                            class="btn-primary-neon"
+                            disabled={isModalBusy}
+                            onclick={handlePrimarySetNewGoal}>
+                            {primaryButtonLabel}
+                        </button>
+
+                        <template lwc:if={canArchiveGoal}>
+                            <button
+                                type="button"
+                                class="btn-secondary-outline"
+                                disabled={isModalBusy}
+                                onclick={handleNotRightNow}>
+                                Not Right Now
+                            </button>
+                        </template>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn-dismiss-link"
+                        disabled={isModalBusy}
+                        onclick={handleDismissModal}>
+                        Dismiss
+                    </button>
+                </div>
+            </div>
         </template>
     </div>
 </template>

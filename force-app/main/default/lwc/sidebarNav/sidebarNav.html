@@ -1,6 +1,6 @@
 <template>
     <aside class="sidebar-container" onmouseleave={handleMouseLeave}>
-        <!-- Mobile Seamless Top Bar & Top-Left Hamburger (Hidden on Desktop) -->
+        <!-- Mobile Header Bar (Hidden on Desktop) -->
         <div class="mobile-header-bar">
             <button class="hamburger-btn" onclick={toggleMobileMenu} aria-label="Toggle Navigation Menu">
                 <span class={hamburgerLine1Class}></span>
@@ -8,7 +8,7 @@
                 <span class={hamburgerLine3Class}></span>
             </button>
             <div class="mobile-clock-group">
-                <div class="mobile-ops-label">[ SYSTEM OPS ]</div>
+                <img src={logoUrl} alt="Command Center v2" class="mobile-brand-logo" />
                 <div class="mobile-date-readout">{currentDate}</div>
                 <div class="mobile-time-readout">{currentTime}</div>
             </div>
@@ -16,7 +16,7 @@
 
         <!-- Desktop Header & Clock (Hidden on Mobile) -->
         <div class="sidebar-header desktop-header">
-            <div class="vertical-text">[ SYSTEM OPS ]</div>
+            <img src={logoUrl} alt="Command Center v2" class="brand-logo" />
             <div class="timestamp-container">
                 <div>{currentDate}</div>
                 <div class="time-readout">{currentTime}</div>
@@ -95,10 +95,6 @@
                 <div class={themeClass} data-id="theme" onmouseenter={handleMouseEnter} onclick={handleNavClick}>
                     <lightning-icon icon-name="utility:palette" size="xx-small" class="nav-icon"></lightning-icon>
                     <span>Theme</span>
-                </div>
-                <div class={settingsClass} data-id="settings" onmouseenter={handleMouseEnter} onclick={handleNavClick}>
-                    <lightning-icon icon-name="utility:settings" size="xx-small" class="nav-icon"></lightning-icon>
-                    <span>Settings</span>
                 </div>
             </div>
         </div>
